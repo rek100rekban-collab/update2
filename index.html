@@ -36,7 +36,6 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="text/babel">
-    // ВСЯ ИГРА ЗДЕСЬ (сокращенная версия для одного файла)
     const { useState, useEffect, useRef } = React;
     
     const TelegramWebApp = window.Telegram?.WebApp;
@@ -74,15 +73,15 @@
       const [isSpinning, setIsSpinning] = useState(false);
       const [spinResult, setSpinResult] = useState(null);
       const [showTopUp, setShowTopUp] = useState(false);
-      const [showPromo, setShowPromo] = useState(false);
       const [promoCode, setPromoCode] = useState('');
       const [promoError, setPromoError] = useState('');
       const [promoSuccess, setPromoSuccess] = useState('');
       const [adminAttempts, setAdminAttempts] = useState(0);
+      const [showAdminLogin, setShowAdminLogin] = useState(false);
       const [isAdmin, setIsAdmin] = useState(false);
+      const [adminLogin, setAdminLogin] = useState('');
       const [adminPassword, setAdminPassword] = useState('');
       const [adminScreen, setAdminScreen] = useState('stats');
-      const rouletteRef = useRef(null);
 
       useEffect(() => {
         if (TelegramWebApp) {
@@ -117,22 +116,24 @@
       }, [balance, cases, inventory, freeCases, tasks, inventorySlots]);
 
       const handleTitleClick = () => {
-        setAdminAttempts(prev => {
-          const newAttempts = prev + 1;
-          if (newAttempts >= 7) {
-            setIsAdmin(true);
-            return 0;
-          }
-          return newAttempts;
-        });
+        const newAttempts = adminAttempts + 1;
+        setAdminAttempts(newAttempts);
+        if (newAttempts >= 11) {
+          setShowAdminLogin(true);
+          setAdminAttempts(0);
+        }
       };
 
       const checkAdminLogin = () => {
-        if (adminPassword === 'REMOVED') {
+        if (adminLogin === 'REMOVED' && adminPassword === 'REMOVED') {
           setIsAdmin(true);
-          setAdminAttempts(0);
+          setShowAdminLogin(false);
+          setAdminLogin('');
+          setAdminPassword('');
         } else {
-          alert('Неверный пароль!');
+          alert('Неверный логин или пароль!');
+          setAdminLogin('');
+          setAdminPassword('');
         }
       };
 
@@ -239,12 +240,6 @@
             diamond: { ...prev.diamond, locked: false, isNew: true }
           }));
           setPromoSuccess('Промокод активирован! Получено 2 кейса Алмаз!');
-          setTimeout(() => {
-            setCases(prev => ({
-              ...prev,
-              diamond: { ...prev.diamond, locked: false, isNew: true }
-            }));
-          }, 100);
           setPromoCode('');
         } else {
           setPromoError('Ошибка! Промокод не найден');
@@ -393,6 +388,41 @@
               {balance.toFixed(2)} ⭐
             </button>
           </header>
+
+          {/* Admin Login Modal */}
+          {showAdminLogin && (
+            <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+              <div className="glass rounded-2xl p-6 max-w-sm w-full">
+                <h2 className="text-xl font-bold text-center mb-4">🔐 Вход в админ-панель</h2>
+                <input 
+                  type="text" 
+                  placeholder="Логин"
+                  value={adminLogin}
+                  onChange={(e) => setAdminLogin(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 mb-3 text-center"
+                />
+                <input 
+                  type="password" 
+                  placeholder="Пароль"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 mb-4 text-center"
+                />
+                <button 
+                  onClick={checkAdminLogin}
+                  className="w-full bg-indigo-600 py-3 rounded-xl font-bold mb-2"
+                >
+                  Войти
+                </button>
+                <button 
+                  onClick={() => setShowAdminLogin(false)}
+                  className="w-full bg-gray-700 py-2 rounded-xl"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Main Content */}
           <main className="p-4 max-w-md mx-auto">
