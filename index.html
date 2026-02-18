@@ -28,6 +28,8 @@
     .roulette-container { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
     .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
     .dark .glass { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .loading-dots:after { content: '...'; animation: dots 1.5s steps(5, end) infinite; }
+    @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
   </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 min-h-screen text-white overflow-x-hidden">
@@ -39,6 +41,8 @@
     const { useState, useEffect, useRef } = React;
     
     const TelegramWebApp = window.Telegram?.WebApp;
+    const ADMIN_WALLET = 'UQAWqaIPFSg81l9MlgAx0HBE9o3gpJMhk1dnyryKJXhWNHIc';
+    const TONCENTER_API = 'https://toncenter.com/api/v2';
     
     const INITIAL_CASES = {
       money: { id: 'money', name: 'Денежный', emoji: '💵', price: 350, color: 'from-green-400 to-green-600', locked: false },
@@ -50,10 +54,10 @@
     };
 
     const TON_RATES = [
-      { stars: 50, ton: 0.6 },
-      { stars: 250, ton: 3 },
-      { stars: 500, ton: 6 },
-      { stars: 1000, ton: 12 }
+      { stars: 50, ton: 0.6, id: 'rate_50' },
+      { stars: 250, ton: 3, id: 'rate_250' },
+      { stars: 500, ton: 6, id: 'rate_500' },
+      { stars: 1000, ton: 12, id: 'rate_1000' }
     ];
 
     function App() {
@@ -68,7 +72,7 @@
         deposit: { completed: false, progress: 0 },
         invite: { completed: false, progress: 0, count: 0 }
       });
-      const [user, setUser] = useState({ name: 'Пользователь', avatar: null, username: null });
+      const [user, setUser] = useState({ name: 'Пользователь', avatar: null, username: null, id: null });
       const [selectedCase, setSelectedCase] = useState(null);
       const [isSpinning, setIsSpinning] = useState(false);
       const [spinResult, setSpinResult] = useState(null);
@@ -82,6 +86,9 @@
       const [adminLogin, setAdminLogin] = useState('');
       const [adminPassword, setAdminPassword] = useState('');
       const [adminScreen, setAdminScreen] = useState('stats');
+      const [pendingPayments, setPendingPayments] = useState([]);
+      const [checkingPayment, setCheckingPayment] = useState(false);
+      const [paymentStatus, setPaymentStatus] = useState('');
 
       useEffect(() => {
         if (TelegramWebApp) {
@@ -92,7 +99,8 @@
             setUser({
               name: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : ''),
               username: tgUser.username ? '@' + tgUser.username : null,
-              avatar: tgUser.photo_url || null
+              avatar: tgUser.photo_url || null,
+              id: tgUser.id
             });
           }
         }
@@ -106,14 +114,15 @@
           setFreeCases(data.freeCases ?? 5);
           setTasks(data.tasks || tasks);
           setInventorySlots(data.inventorySlots || 5);
+          setPendingPayments(data.pendingPayments || []);
         }
       }, []);
 
       useEffect(() => {
         localStorage.setItem('sbs_game_data', JSON.stringify({
-          balance, cases, inventory, freeCases, tasks, inventorySlots
+          balance, cases, inventory, freeCases, tasks, inventorySlots, pendingPayments
         }));
-      }, [balance, cases, inventory, freeCases, tasks, inventorySlots]);
+      }, [balance, cases, inventory, freeCases, tasks, inventorySlots, pendingPayments]);
 
       const handleTitleClick = () => {
         const newAttempts = adminAttempts + 1;
@@ -134,6 +143,85 @@
           alert('Неверный логин или пароль!');
           setAdminLogin('');
           setAdminPassword('');
+        }
+      };
+
+      const generatePaymentId = () => {
+        return 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      };
+
+      const topUpBalance = (stars, ton) => {
+        const paymentId = generatePaymentId();
+        const memo = `SBS_${user.id}_${stars}_${paymentId}`;
+        
+        const newPayment = {
+          id: paymentId,
+          stars: stars,
+          ton: ton,
+          memo: memo,
+          status: 'pending',
+          createdAt: Date.now()
+        };
+        
+        setPendingPayments(prev => [...prev, newPayment]);
+        
+        const tonLink = `ton://transfer/${ADMIN_WALLET}?amount=${Math.round(ton * 1000000000)}&text=${encodeURIComponent(memo)}`;
+        window.open(tonLink, '_blank');
+        
+        setPaymentStatus(`Отправьте ${ton} TON с комментарием: ${memo}`);
+        setShowTopUp(false);
+        
+        setTimeout(() => checkPayment(paymentId), 10000);
+      };
+
+      const checkPayment = async (paymentId) => {
+        const payment = pendingPayments.find(p => p.id === paymentId);
+        if (!payment || payment.status === 'completed') return;
+
+        setCheckingPayment(true);
+        setPaymentStatus('Проверяем платеж...');
+
+        try {
+          const response = await fetch(`${TONCENTER_API}/getTransactions?address=${ADMIN_WALLET}&limit=20`);
+          const data = await response.json();
+
+          if (data.result && Array.isArray(data.result)) {
+            const foundTx = data.result.find(tx => {
+              const msg = tx.in_msg;
+              if (!msg) return false;
+              const amount = parseInt(msg.value) / 1000000000;
+              const comment = msg.message || '';
+              return comment.includes(payment.memo) && Math.abs(amount - payment.ton) < 0.01;
+            });
+
+            if (foundTx) {
+              setBalance(prev => prev + payment.stars);
+              setPendingPayments(prev => prev.map(p => 
+                p.id === paymentId ? {...p, status: 'completed', txHash: foundTx.transaction_id.hash} : p
+              ));
+              setPaymentStatus(`✅ Успешно! Зачислено ${payment.stars} звезд`);
+              
+              if (!tasks.deposit.completed && payment.stars >= 100) {
+                setTasks(prev => ({ ...prev, deposit: { completed: true, progress: 100 } }));
+                setCases(prev => ({ ...prev, diamond: { ...prev.diamond, locked: false, isNew: true } }));
+              }
+              
+              setTimeout(() => setPaymentStatus(''), 3000);
+            } else {
+              setPaymentStatus('Платеж не найден. Попробуйте через минуту...');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking payment:', error);
+          setPaymentStatus('Ошибка проверки. Попробуйте позже.');
+        } finally {
+          setCheckingPayment(false);
+        }
+      };
+
+      const checkAllPendingPayments = async () => {
+        for (const payment of pendingPayments.filter(p => p.status === 'pending')) {
+          await checkPayment(payment.id);
         }
       };
 
@@ -247,12 +335,6 @@
         }
       };
 
-      const topUpBalance = (stars, ton) => {
-        const tonLink = `ton://transfer/UQBDGJ...?amount=${ton * 1000000000}&text=Buy${stars}Stars`;
-        window.open(tonLink, '_blank');
-        setShowTopUp(false);
-      };
-
       if (isAdmin) {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -263,7 +345,7 @@
               </div>
               
               <div className="flex gap-2 mb-6 overflow-x-auto">
-                {['stats', 'users', 'cases', 'tasks', 'settings'].map(tab => (
+                {['stats', 'users', 'cases', 'tasks', 'payments', 'settings'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setAdminScreen(tab)}
@@ -273,6 +355,7 @@
                     {tab === 'users' && '👥'}
                     {tab === 'cases' && '🎁'}
                     {tab === 'tasks' && '📝'}
+                    {tab === 'payments' && '💳'}
                     {tab === 'settings' && '⚙️'} {tab}
                   </button>
                 ))}
@@ -354,9 +437,32 @@
                   </div>
                 )}
 
+                {adminScreen === 'payments' && (
+                  <div>
+                    <h3 className="text-lg mb-4">История платежей</h3>
+                    {pendingPayments.length === 0 ? (
+                      <p className="text-gray-400">Нет платежей</p>
+                    ) : (
+                      pendingPayments.map(p => (
+                        <div key={p.id} className={`p-3 rounded-lg mb-2 ${p.status === 'completed' ? 'bg-green-800' : 'bg-yellow-800'}`}>
+                          <div className="flex justify-between">
+                            <span>{p.stars} ⭐ ({p.ton} TON)</span>
+                            <span>{p.status === 'completed' ? '✅' : '⏳'}</span>
+                          </div>
+                          <div className="text-xs text-gray-400 truncate">{p.memo}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
                 {adminScreen === 'settings' && (
                   <div>
                     <h3 className="text-lg mb-4">Настройки</h3>
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-400 mb-2">TON Кошелек:</p>
+                      <p className="text-xs break-all bg-gray-800 p-2 rounded">{ADMIN_WALLET}</p>
+                    </div>
                     <button 
                       onClick={() => {localStorage.clear(); window.location.reload();}}
                       className="bg-red-600 px-4 py-2 rounded-lg"
@@ -373,7 +479,6 @@
 
       return (
         <div className="min-h-screen pb-24">
-          {/* Header */}
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
             <h1 
               onClick={handleTitleClick}
@@ -389,7 +494,21 @@
             </button>
           </header>
 
-          {/* Admin Login Modal */}
+          {paymentStatus && (
+            <div className={`mx-4 mt-2 p-3 rounded-lg text-center text-sm ${paymentStatus.includes('✅') ? 'bg-green-500/20 border border-green-500' : 'bg-blue-500/20 border border-blue-500'}`}>
+              {checkingPayment && <span className="loading-dots">Проверка</span>}
+              {paymentStatus}
+              {pendingPayments.filter(p => p.status === 'pending').length > 0 && !checkingPayment && (
+                <button 
+                  onClick={checkAllPendingPayments}
+                  className="ml-2 underline text-yellow-300"
+                >
+                  Проверить сейчас
+                </button>
+              )}
+            </div>
+          )}
+
           {showAdminLogin && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -424,7 +543,6 @@
             </div>
           )}
 
-          {/* Main Content */}
           <main className="p-4 max-w-md mx-auto">
             {currentScreen === 'cases' && (
               <div>
@@ -594,7 +712,6 @@
             )}
           </main>
 
-          {/* Case Modal */}
           {selectedCase && (
             <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -663,14 +780,18 @@
             </div>
           )}
 
-          {/* Top Up Modal */}
           {showTopUp && (
             <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">💳 Пополнение</h3>
+                  <h3 className="text-xl font-bold">💳 Пополнение TON</h3>
                   <button onClick={() => setShowTopUp(false)} className="text-2xl">&times;</button>
                 </div>
+                
+                <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-3 mb-4 text-sm">
+                  <p>После оплаты нажмите "Проверить" на главном экране</p>
+                </div>
+
                 <div className="space-y-3">
                   {TON_RATES.map((rate) => (
                     <button
@@ -683,12 +804,14 @@
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-center mt-4 opacity-50">Нажмите для оплаты через TON</p>
+                
+                <div className="mt-4 text-xs text-center opacity-50">
+                  <p>Адрес: {ADMIN_WALLET.slice(0, 10)}...{ADMIN_WALLET.slice(-6)}</p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Bottom Navigation */}
           <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
             <div className="max-w-md mx-auto flex justify-around">
               <button 
