@@ -32,6 +32,9 @@
     @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
     .line-through { text-decoration: line-through; opacity: 0.5; }
     .fullscreen-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; overflow-y: auto; }
+    .auction-circle { width: 300px; height: 300px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; }
+    .auction-item { position: absolute; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.1s; }
+    .player-zone { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%); transform-origin: center; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 min-h-screen text-white overflow-x-hidden">
@@ -46,31 +49,34 @@
     const ADMIN_WALLET = 'UQAWqaIPFSg81l9MlgAx0HBE9o3gpJMhk1dnyryKJXhWNHIc';
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     
-    // Награды для каждого кейса
+    // Награды для каждого кейса (от больших шансов к маленьким)
     const CASE_REWARDS = {
       diamond: [
-        { id: 'stars_2', name: '2 ⭐️', displayChance: '95%', realChance: 95, type: 'stars', value: 2, emoji: '⭐' },
-        { id: 'bear', name: 'Мишка 🧸', displayChance: '3.7%', realChance: 3.7, type: 'item', sellPrice: 30, emoji: '🧸' },
-        { id: 'snoop', name: 'Снуп Дог 🐕', displayChance: '1.25%', realChance: 1.25, type: 'item', sellPrice: 125, emoji: '🐕' },
-        { id: 'diamond_special', name: 'Алмаз 💎', displayChance: '0.05%', realChance: 0, type: 'collectible', emoji: '💎' }
+        { id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐' },
+        { id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
+        { id: 'stars_25', name: '25 ⭐️', displayChance: '9%', realChance: 9, type: 'stars', value: 25, emoji: '⭐' },
+        { id: 'stars_80', name: '80 ⭐️', displayChance: '4%', realChance: 4, type: 'stars', value: 80, emoji: '⭐' },
+        { id: 'diamond_pro', name: 'Алмаз PRO 💎', displayChance: '1.5%', realChance: 0.01, type: 'collectible', emoji: '💎' },
+        { id: 'snoop_pro', name: 'Snoop Dog PRO 🐕', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🐕' }
       ],
       coal: [
-        { id: 'stars_015', name: '0.15 ⭐️', displayChance: '90%', realChance: 90, type: 'stars', value: 0.15, emoji: '⭐' },
-        { id: 'pickaxe', name: 'Кирка ⛏️', displayChance: '6%', realChance: 6, type: 'item', sellPrice: 2.5, emoji: '⛏️' },
-        { id: 'material', name: 'Материал 🧱', displayChance: '3%', realChance: 3, type: 'item', sellPrice: 4, emoji: '🧱' },
-        { id: 'stars_15', name: '15 ⭐️', displayChance: '0.97%', realChance: 0.97, type: 'stars', value: 15, emoji: '⭐' },
-        { id: 'brownie', name: 'Happy Brownie 💩', displayChance: '0.03%', realChance: 0.03, type: 'collectible', emoji: '💩' }
+        { id: 'stars_2_5', name: '2.5 ⭐️', displayChance: '60%', realChance: 60, type: 'stars', value: 2.5, emoji: '⭐' },
+        { id: 'stars_5', name: '5 ⭐️', displayChance: '18%', realChance: 18, type: 'stars', value: 5, emoji: '⭐' },
+        { id: 'pickaxe', name: 'Кирка ⛏️', displayChance: '10%', realChance: 10, type: 'item', sellPrice: 10, emoji: '⛏️' },
+        { id: 'stars_15', name: '15 ⭐️', displayChance: '6%', realChance: 6, type: 'stars', value: 15, emoji: '⭐' },
+        { id: 'material', name: 'Материал 🧱', displayChance: '5%', realChance: 5, type: 'item', sellPrice: 40, emoji: '🧱' },
+        { id: 'brownie_pro', name: 'Happy Brownie PRO 💩', displayChance: '1%', realChance: 0.00001, type: 'collectible', emoji: '💩' }
       ],
       elite: [
         { id: 'stars_200', name: '200 ⭐️', displayChance: '75%', realChance: 86, type: 'stars', value: 200, emoji: '⭐' },
         { id: 'stars_275', name: '275 ⭐️', displayChance: '5%', realChance: 1, type: 'stars', value: 275, emoji: '⭐' },
+        { id: 'champagne', name: '🍾', displayChance: '17%', realChance: 13, type: 'collectible', emoji: '🍾' },
         { id: 'socks', name: 'Носки 🧦', displayChance: '2%', realChance: 0, type: 'collectible', emoji: '🧦' },
-        { id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '⚔️' },
-        { id: 'champagne', name: '🍾', displayChance: '17%', realChance: 13, type: 'collectible', emoji: '🍾' }
+        { id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '⚔️' }
       ],
       platinum: [
-        { id: 'stars_10', name: '10 ⭐️', displayChance: '75%', realChance: 75, type: 'stars', value: 10, emoji: '⭐' },
-        { id: 'stars_50', name: '50 ⭐️', displayChance: '15%', realChance: 15, type: 'stars', value: 50, emoji: '⭐' },
+        { id: 'stars_35', name: '35 ⭐️', displayChance: '55%', realChance: 55, type: 'stars', value: 35, emoji: '⭐' },
+        { id: 'stars_50', name: '50 ⭐️', displayChance: '35%', realChance: 35, type: 'stars', value: 50, emoji: '⭐' },
         { id: 'ring', name: '💍', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '💍' },
         { id: 'bday', name: 'B-day 🗓️', displayChance: '4%', realChance: 4.5, type: 'item', sellPrice: 150, emoji: '🗓️' },
         { id: 'bday_pro', name: 'B-Day PRO 📅', displayChance: '1%', realChance: 0.5, type: 'collectible', emoji: '📅' }
@@ -83,8 +89,8 @@
         { id: 'clover_pro', name: '🍀 Clover Pin PRO', displayChance: '2%', realChance: 0, type: 'collectible', emoji: '🍀' }
       ],
       money: [
-        { id: 'stars_75', name: '75 ⭐️', displayChance: '40%', realChance: 40, type: 'stars', value: 75, emoji: '⭐' },
         { id: 'stars_150', name: '150 ⭐️', displayChance: '45%', realChance: 45, type: 'stars', value: 150, emoji: '⭐' },
+        { id: 'stars_75', name: '75 ⭐️', displayChance: '40%', realChance: 40, type: 'stars', value: 75, emoji: '⭐' },
         { id: 'trophy', name: '🏆', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
         { id: 'gem', name: '💎', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '💎' },
         { id: 'bday_happy', name: 'Happy B-day 💈', displayChance: '4%', realChance: 5, type: 'collectible', emoji: '💈' },
@@ -97,8 +103,8 @@
       platinum: { id: 'platinum', name: 'Платина', emoji: '💎', price: 100, color: 'from-gray-300 to-gray-500', locked: false },
       gold: { id: 'gold', name: 'Золотой', emoji: '👑', price: 250, color: 'from-yellow-400 to-yellow-600', locked: false },
       money: { id: 'money', name: 'Денежный', emoji: '💵', price: 350, color: 'from-green-400 to-green-600', locked: false },
-      elite: { id: 'elite', name: 'Элита', emoji: '🎖️', price: 500, color: 'from-red-400 to-red-600', locked: true, isNew: false },
-      diamond: { id: 'diamond', name: 'Алмаз', emoji: '💎', price: 50, originalPrice: 50, discountPrice: 35, color: 'from-blue-400 to-blue-600', locked: true, isNew: false, freeCount: 5 }
+      elite: { id: 'elite', name: 'Элита', emoji: '🎖️', price: 500, color: 'from-red-400 to-red-600', locked: false, isNew: false },
+      diamond: { id: 'diamond', name: 'Алмаз', emoji: '💎', price: 50, originalPrice: 50, discountPrice: 35, color: 'from-blue-400 to-blue-600', locked: false, isNew: false, freeCount: 5 }
     };
 
     const TON_RATES = [
@@ -117,7 +123,7 @@
       const [tasks, setTasks] = useState({
         subscribe: { completed: false, progress: 0 },
         deposit: { completed: false, progress: 0 },
-        invite: { completed: false, progress: 0, count: 0 }
+        invite: { completed: false, progress: 0, count: 0, pending: 0 }
       });
       const [user, setUser] = useState({ name: 'Пользователь', avatar: null, username: null, id: null });
       const [selectedCase, setSelectedCase] = useState(null);
@@ -139,8 +145,40 @@
       const [paymentStatus, setPaymentStatus] = useState('');
       const [allUsers, setAllUsers] = useState([]);
       const [selectedUser, setSelectedUser] = useState(null);
+      const [onlineCount, setOnlineCount] = useState(1);
+      const [showCollectibleModal, setShowCollectibleModal] = useState(false);
+      const [selectedCollectible, setSelectedCollectible] = useState(null);
+      const [currentGame, setCurrentGame] = useState(null);
+      const [auctionLobbies, setAuctionLobbies] = useState(Array(10).fill(null).map((_, i) => ({ id: i + 1, players: [], status: 'waiting', prize: null })));
 
       useEffect(() => {
+        // Обновление онлайна
+        const updateOnline = () => {
+          const users = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
+          // Считаем "онлайн" тех, кто активен последние 5 минут
+          const now = Date.now();
+          const online = users.filter(u => u.lastActive && now - u.lastActive < 300000).length;
+          setOnlineCount(Math.max(1, online));
+        };
+        
+        updateOnline();
+        const interval = setInterval(updateOnline, 30000);
+        
+        // Обновляем свою активность
+        const saveActivity = () => {
+          if (user.id) {
+            const users = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
+            const idx = users.findIndex(u => u.id === user.id);
+            if (idx !== -1) {
+              users[idx].lastActive = Date.now();
+              localStorage.setItem('sbs_all_users', JSON.stringify(users));
+            }
+          }
+        };
+        
+        saveActivity();
+        const activityInterval = setInterval(saveActivity, 60000);
+
         if (TelegramWebApp) {
           TelegramWebApp.ready();
           TelegramWebApp.expand();
@@ -154,10 +192,9 @@
             };
             setUser(newUser);
             
-            // Добавляем пользователя в общий список если его нет
             const savedUsers = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
             if (!savedUsers.find(u => u.id === tgUser.id.toString())) {
-              savedUsers.push({ ...newUser, balance: 0, inventory: [] });
+              savedUsers.push({ ...newUser, balance: 0, inventory: [], lastActive: Date.now() });
               localStorage.setItem('sbs_all_users', JSON.stringify(savedUsers));
             }
             setAllUsers(savedUsers);
@@ -175,21 +212,24 @@
           setPendingPayments(data.pendingPayments || []);
           setUsedPromos(data.usedPromos || []);
         }
-      }, []);
+        
+        return () => {
+          clearInterval(interval);
+          clearInterval(activityInterval);
+        };
+      }, [user.id]);
 
       useEffect(() => {
         localStorage.setItem('sbs_game_data', JSON.stringify({
           balance, cases, inventory, tasks, inventorySlots, pendingPayments, usedPromos
         }));
         
-        // Обновляем данные пользователя в общем списке
         if (user.id) {
           const savedUsers = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
           const idx = savedUsers.findIndex(u => u.id === user.id);
           if (idx !== -1) {
-            savedUsers[idx] = { ...savedUsers[idx], balance, inventory };
+            savedUsers[idx] = { ...savedUsers[idx], balance, inventory, lastActive: Date.now() };
             localStorage.setItem('sbs_all_users', JSON.stringify(savedUsers));
-            setAllUsers(savedUsers);
           }
         }
       }, [balance, cases, inventory, tasks, inventorySlots, pendingPayments, usedPromos, user.id]);
@@ -275,7 +315,6 @@
               
               if (!tasks.deposit.completed && payment.stars >= 100) {
                 setTasks(prev => ({ ...prev, deposit: { completed: true, progress: 100 } }));
-                setCases(prev => ({ ...prev, diamond: { ...prev.diamond, locked: false, isNew: true } }));
               }
               
               setTimeout(() => setPaymentStatus(''), 3000);
@@ -358,7 +397,8 @@
 
       const sellItem = (item) => {
         if (item.type === 'collectible') {
-          alert('Это коллекционный предмет! Обратитесь к администрации для выдачи приза.');
+          setSelectedCollectible(item);
+          setShowCollectibleModal(true);
           return;
         }
         if (confirm(`Продать ${item.name} за ${item.sellPrice} ⭐️?`)) {
@@ -383,21 +423,29 @@
           window.open('https://t.me/stepbystepdelision', '_blank');
           setTimeout(() => {
             setTasks(prev => ({ ...prev, subscribe: { completed: true, progress: 100 } }));
-            setCases(prev => ({ ...prev, elite: { ...prev.elite, locked: false, isNew: true } }));
+            setCases(prev => ({ ...prev, elite: { ...prev.elite, isNew: true } }));
           }, 2000);
         } else if (taskId === 'deposit') {
           setShowTopUp(true);
         } else if (taskId === 'invite') {
-          const link = 'https://t.me/share/url?url=' + encodeURIComponent(window.location.href);
+          // Отправка ссылки другу
+          const link = 'https://t.me/share/url?url=' + encodeURIComponent(`https://t.me/stepbystep_game_bot?start=${user.id}`);
           window.open(link, '_blank');
-          setTasks(prev => ({
-            ...prev,
-            invite: { ...prev.invite, count: prev.invite.count + 1 }
-          }));
-          if (tasks.invite.count >= 2) {
-            setTasks(prev => ({ ...prev, invite: { completed: true, progress: 100 } }));
-            setBalance(b => b + 5);
-          }
+          
+          // Имитация приглашения (в реальности нужно проверять через бэкенд)
+          setTimeout(() => {
+            const newCount = tasks.invite.count + 1;
+            setTasks(prev => ({
+              ...prev,
+              invite: { ...prev.invite, count: newCount }
+            }));
+            
+            if (newCount >= 3 && !tasks.invite.completed) {
+              setTasks(prev => ({ ...prev, invite: { completed: true, progress: 100, count: newCount } }));
+              setBalance(b => b + 30);
+              alert('🎉 Вы пригласили 3 друзей! Получено 30 звезд!');
+            }
+          }, 2000);
         }
       };
 
@@ -413,7 +461,7 @@
           setUsedPromos(prev => [...prev, 'DIAMOND']);
           setCases(prev => ({
             ...prev,
-            diamond: { ...prev.diamond, locked: false, isNew: true, freeCount: (prev.diamond.freeCount || 0) + 2 }
+            diamond: { ...prev.diamond, freeCount: (prev.diamond.freeCount || 0) + 2 }
           }));
           setPromoSuccess('Промокод активирован! Получено 2 кейса Алмаз! Откройте раздел "Кейсы"');
           setPromoCode('');
@@ -430,30 +478,37 @@
         if (userIdx !== -1) {
           if (reward.type === 'stars') {
             savedUsers[userIdx].balance = (savedUsers[userIdx].balance || 0) + reward.amount;
+            
+            // Если это текущий пользователь, обновляем его баланс
+            if (targetUserId === user.id) {
+              setBalance(savedUsers[userIdx].balance);
+            }
           } else if (reward.type === 'case') {
-            // Для кейсов нужна сложная логика, пока просто уведомление
-            alert(`Кейс ${reward.caseType} выдан пользователю ${savedUsers[userIdx].name}`);
+            // Добавляем бесплатный кейс
+            const caseId = reward.caseType;
+            if (targetUserId === user.id) {
+              setCases(prev => ({
+                ...prev,
+                [caseId]: { ...prev[caseId], freeCount: (prev[caseId].freeCount || 0) + 1 }
+              }));
+            }
           } else if (reward.type === 'item') {
             savedUsers[userIdx].inventory = [...(savedUsers[userIdx].inventory || []), reward.item];
+            
+            if (targetUserId === user.id) {
+              setInventory(savedUsers[userIdx].inventory);
+            }
           }
           
           localStorage.setItem('sbs_all_users', JSON.stringify(savedUsers));
           setAllUsers(savedUsers);
           
-          // Если это текущий пользователь, обновляем его состояние
-          if (targetUserId === user.id) {
-            setBalance(savedUsers[userIdx].balance);
-            setInventory(savedUsers[userIdx].inventory);
-          }
-          
           alert(`Награда выдана пользователю ${savedUsers[userIdx].name}!`);
         }
       };
 
-      const handleCollectibleClick = (item) => {
-        if (item.type === 'collectible') {
-          window.open('https://t.me/stepbystepdelision', '_blank');
-        }
+      const joinAuctionLobby = (lobbyId) => {
+        setCurrentGame({ type: 'auction', lobbyId });
       };
 
       if (isAdmin) {
@@ -466,7 +521,7 @@
               </div>
               
               <div className="flex gap-2 mb-6 overflow-x-auto">
-                {['stats', 'users', 'cases', 'tasks', 'payments', 'rewards', 'settings'].map(tab => (
+                {['stats', 'users', 'cases', 'tasks', 'payments', 'rewards'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setAdminScreen(tab)}
@@ -477,8 +532,7 @@
                     {tab === 'cases' && '🎁'}
                     {tab === 'tasks' && '📝'}
                     {tab === 'payments' && '💳'}
-                    {tab === 'rewards' && '🎀'}
-                    {tab === 'settings' && '⚙️'} {tab}
+                    {tab === 'rewards' && '🎀'} {tab}
                   </button>
                 ))}
               </div>
@@ -496,7 +550,7 @@
                     </div>
                     <div className="bg-gray-800 p-4 rounded-lg">
                       <div className="text-gray-400">Онлайн</div>
-                      <div className="text-3xl font-bold">{allUsers.length}</div>
+                      <div className="text-3xl font-bold">{onlineCount}</div>
                     </div>
                     <div className="bg-gray-800 p-4 rounded-lg">
                       <div className="text-gray-400">Всего подарков</div>
@@ -544,67 +598,78 @@
                       </div>
                       
                       {selectedUser && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 100 })}
-                            className="bg-green-600 p-3 rounded-lg"
-                          >
-                            +100 ⭐
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 500 })}
-                            className="bg-green-600 p-3 rounded-lg"
-                          >
-                            +500 ⭐
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 1000 })}
-                            className="bg-green-600 p-3 rounded-lg"
-                          >
-                            +1000 ⭐
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Мишка 🧸', emoji: '🧸', type: 'item', sellPrice: 30 } })}
-                            className="bg-blue-600 p-3 rounded-lg"
-                          >
-                            🧸 Мишка
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Снуп Дог 🐕', emoji: '🐕', type: 'item', sellPrice: 125 } })}
-                            className="bg-blue-600 p-3 rounded-lg"
-                          >
-                            🐕 Снуп Дог
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Алмаз 💎', emoji: '💎', type: 'collectible' } })}
-                            className="bg-purple-600 p-3 rounded-lg"
-                          >
-                            💎 Алмаз (коллекц.)
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Happy Brownie 💩', emoji: '💩', type: 'collectible' } })}
-                            className="bg-yellow-600 p-3 rounded-lg"
-                          >
-                            💩 Brownie
-                          </button>
-                          <button 
-                            onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Light Sword ⚔️', emoji: '⚔️', type: 'collectible' } })}
-                            className="bg-red-600 p-3 rounded-lg"
-                          >
-                            ⚔️ Light Sword
-                          </button>
-                        </div>
+                        <>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 100 })}
+                              className="bg-green-600 p-3 rounded-lg"
+                            >
+                              +100 ⭐
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 500 })}
+                              className="bg-green-600 p-3 rounded-lg"
+                            >
+                              +500 ⭐
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'stars', amount: 1000 })}
+                              className="bg-green-600 p-3 rounded-lg"
+                            >
+                              +1000 ⭐
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'case', caseType: 'diamond' })}
+                              className="bg-blue-600 p-3 rounded-lg"
+                            >
+                              💎 Кейс Алмаз
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'case', caseType: 'elite' })}
+                              className="bg-red-600 p-3 rounded-lg"
+                            >
+                              🎖️ Кейс Элита
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'case', caseType: 'money' })}
+                              className="bg-green-500 p-3 rounded-lg"
+                            >
+                              💵 Кейс Денежный
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-2 mt-4">
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Мишка 🧸', emoji: '🧸', type: 'item', sellPrice: 20 } })}
+                              className="bg-purple-600 p-2 rounded text-sm"
+                            >
+                              🧸 Мишка
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Алмаз PRO 💎', emoji: '💎', type: 'collectible' } })}
+                              className="bg-yellow-600 p-2 rounded text-sm"
+                            >
+                              💎 Алмаз PRO
+                            </button>
+                            <button 
+                              onClick={() => adminGiveReward(selectedUser, { type: 'item', item: { id: Date.now(), name: 'Light Sword ⚔️', emoji: '⚔️', type: 'collectible' } })}
+                              className="bg-red-600 p-2 rounded text-sm"
+                            >
+                              ⚔️ Меч
+                            </button>
+                          </div>
+                        </>
                       )}
                       
                       <div className="border-t border-gray-700 pt-4 mt-4">
                         <h4 className="font-bold mb-2">Выдать себе:</h4>
                         <div className="grid grid-cols-3 gap-2">
                           <button onClick={() => setBalance(b => b + 10000)} className="bg-indigo-600 p-2 rounded">+10000 ⭐</button>
-                          <button onClick={() => addToInventory({ id: Date.now(), name: 'Алмаз 💎', emoji: '💎', type: 'collectible' })} className="bg-purple-600 p-2 rounded">💎 Алмаз</button>
-                          <button onClick={() => addToInventory({ id: Date.now(), name: '🏆', emoji: '🏆', type: 'collectible' })} className="bg-yellow-600 p-2 rounded">🏆 Трофей</button>
-                          <button onClick={() => addToInventory({ id: Date.now(), name: '💍', emoji: '💍', type: 'collectible' })} className="bg-pink-600 p-2 rounded">💍 Кольцо</button>
-                          <button onClick={() => addToInventory({ id: Date.now(), name: '🍾', emoji: '🍾', type: 'collectible' })} className="bg-green-600 p-2 rounded">🍾 Шампанское</button>
-                          <button onClick={() => addToInventory({ id: Date.now(), name: '⚔️', emoji: '⚔️', type: 'collectible' })} className="bg-red-600 p-2 rounded">⚔️ Меч</button>
+                          <button onClick={() => addToInventory({ id: Date.now(), name: 'Алмаз PRO 💎', emoji: '💎', type: 'collectible' })} className="bg-yellow-600 p-2 rounded">💎 Алмаз PRO</button>
+                          <button onClick={() => addToInventory({ id: Date.now(), name: '🏆', emoji: '🏆', type: 'collectible' })} className="bg-purple-600 p-2 rounded">🏆 Трофей</button>
+                          <button onClick={() => setCases(prev => ({...prev, diamond: {...prev.diamond, freeCount: prev.diamond.freeCount + 10}}))} className="bg-blue-600 p-2 rounded">+10 Алмаз</button>
+                          <button onClick={() => setCases(prev => ({...prev, elite: {...prev.elite, freeCount: (prev.elite.freeCount || 0) + 5}}))} className="bg-red-500 p-2 rounded">+5 Элита</button>
+                          <button onClick={() => addToInventory({ id: Date.now(), name: 'Snoop Dog PRO 🐕', emoji: '🐕', type: 'collectible' })} className="bg-green-600 p-2 rounded">🐕 Snoop PRO</button>
                         </div>
                       </div>
                     </div>
@@ -619,7 +684,7 @@
                         <span>{c.emoji} {c.name}</span>
                         <div className="text-right">
                           <div>{c.price} ⭐</div>
-                          {c.id === 'diamond' && <div className="text-sm text-green-400">Бесплатных: {c.freeCount}</div>}
+                          {c.freeCount > 0 && <div className="text-sm text-green-400">Бесплатных: {c.freeCount}</div>}
                         </div>
                       </div>
                     ))}
@@ -637,6 +702,7 @@
                             {task.completed ? '✅ Выполнено' : '⏳ В процессе'}
                           </span>
                         </div>
+                        {key === 'invite' && <div className="text-sm text-gray-400">Приглашено: {task.count}/3</div>}
                       </div>
                     ))}
                   </div>
@@ -660,22 +726,76 @@
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
-                {adminScreen === 'settings' && (
-                  <div>
-                    <h3 className="text-lg mb-4">Настройки</h3>
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-400 mb-2">TON Кошелек:</p>
-                      <p className="text-xs break-all bg-gray-800 p-2 rounded">{ADMIN_WALLET}</p>
+      if (currentGame?.type === 'auction') {
+        return (
+          <div className="min-h-screen bg-gray-900 p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">❄️ Зимний Аукцион ⛄️</h1>
+                <button onClick={() => setCurrentGame(null)} className="text-gray-400">Назад</button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="glass rounded-xl p-4">
+                  <h3 className="font-bold mb-2">Игроки онлайн</h3>
+                  <div className="space-y-2">
+                    <div className="bg-gray-800 p-2 rounded flex justify-between">
+                      <span>Вы</span>
+                      <span className="text-green-400">🟢</span>
                     </div>
-                    <button 
-                      onClick={() => {localStorage.clear(); window.location.reload();}}
-                      className="bg-red-600 px-4 py-2 rounded-lg"
-                    >
-                      🗑️ Сбросить все данные
-                    </button>
+                    <div className="bg-gray-800 p-2 rounded flex justify-between">
+                      <span>Игрок 2</span>
+                      <span className="text-green-400">🟢</span>
+                    </div>
                   </div>
-                )}
+                </div>
+                
+                <div className="flex flex-col items-center justify-center">
+                  <div className="auction-circle bg-gray-800 relative mb-4">
+                    {/* Зоны игроков */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-red-500/30 rounded-full animate-pulse"></div>
+                    {/* Приз в центре */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-3xl animate-bounce">
+                      🎁
+                    </div>
+                  </div>
+                  <p className="text-center text-sm text-gray-400">Минимальная ставка: 25 ⭐</p>
+                </div>
+                
+                <div className="glass rounded-xl p-4">
+                  <h3 className="font-bold mb-2">Ваша ставка</h3>
+                  <div className="bg-indigo-600 p-4 rounded-lg text-center mb-2">
+                    <div className="text-2xl font-bold">0 ⭐</div>
+                    <div className="text-sm">0% шанса</div>
+                  </div>
+                  <input 
+                    type="number" 
+                    min="25"
+                    placeholder="Ваша ставка"
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 mb-2"
+                  />
+                  <button className="w-full bg-green-600 py-2 rounded-lg font-bold">
+                    Сделать ставку
+                  </button>
+                </div>
+              </div>
+              
+              <div className="mt-6 glass rounded-xl p-4">
+                <h3 className="font-bold mb-2">Возможные призы:</h3>
+                <div className="flex justify-around text-2xl">
+                  <span title="Бутылка">🍾</span>
+                  <span title="Кубок">🏆</span>
+                  <span title="Снуп Дог">🐕</span>
+                  <span title="Алмаз">💎</span>
+                  <span title="Мишка">🧸</span>
+                  <span title="250 звезд">250⭐</span>
+                </div>
               </div>
             </div>
           </div>
@@ -711,6 +831,25 @@
                   Проверить сейчас
                 </button>
               )}
+            </div>
+          )}
+
+          {showCollectibleModal && (
+            <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+              <div className="glass rounded-2xl p-6 max-w-sm w-full text-center">
+                <div className="text-6xl mb-4">{selectedCollectible?.emoji}</div>
+                <h3 className="text-xl font-bold mb-2">Коллекционный предмет!</h3>
+                <p className="mb-4">Данный подарок является коллекционным! Обратитесь к 
+                  <a href="https://t.me/stepbystepdelision" target="_blank" className="text-blue-400 underline mx-1">администрации</a> 
+                  для его получения.
+                </p>
+                <button 
+                  onClick={() => setShowCollectibleModal(false)}
+                  className="w-full bg-indigo-600 py-3 rounded-xl font-bold"
+                >
+                  Понятно
+                </button>
+              </div>
             </div>
           )}
 
@@ -759,13 +898,13 @@
                 )}
                 <div className="grid grid-cols-2 gap-4">
                   {Object.values(cases).map(c => (
-                    <div key={c.id} className={`glass rounded-xl p-4 relative ${c.locked ? 'opacity-75' : ''}`}>
+                    <div key={c.id} className="glass rounded-xl p-4 relative">
                       {c.isNew && (
                         <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
                           Новое!
                         </span>
                       )}
-                      {c.id === 'diamond' && c.freeCount === 0 && !c.locked && (
+                      {c.id === 'diamond' && c.freeCount === 0 && (
                         <span className="absolute -top-2 -left-2 bg-green-500 text-xs px-2 py-1 rounded-full animate-pulse">
                           Скидка!
                         </span>
@@ -777,22 +916,45 @@
                       <p className="text-center text-sm opacity-75">
                         {c.id === 'diamond' && c.freeCount > 0 ? (
                           <span className="text-green-400">Бесплатно!</span>
-                        ) : c.id === 'diamond' && c.freeCount === 0 ? (
+                        ) : c.id === 'diamond' ? (
                           <span>
-                            <span className="line-through">{c.originalPrice}</span> {c.discountPrice} ⭐
+                            <span className="line-through text-gray-500">{c.originalPrice}</span> {c.discountPrice} ⭐
                           </span>
                         ) : (
                           `${c.price} ⭐`
                         )}
                       </p>
                       <button 
-                        onClick={() => c.locked ? alert('Кейс заблокирован! Выполните задания или используйте промокод.') : setSelectedCase(c)}
-                        className={`w-full mt-2 py-2 rounded-lg font-bold ${c.locked ? 'bg-gray-600' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}`}
+                        onClick={() => setSelectedCase(c)}
+                        className="w-full mt-2 py-2 rounded-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500"
                       >
-                        {c.locked ? '🔒' : 'Открыть'}
+                        Открыть
                       </button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {currentScreen === 'games' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-center">🎮 Игры</h2>
+                <div className="space-y-4">
+                  <div className="glass rounded-xl p-6 text-center cursor-pointer hover:bg-white/5" onClick={() => setCurrentGame({ type: 'auction' })}>
+                    <h3 className="text-2xl font-bold mb-2">❄️ Зимний Аукцион ⛄️</h3>
+                    <p className="text-gray-400">Соревнуйтесь с другими игроками за ценные призы!</p>
+                    <button className="mt-4 bg-indigo-600 px-6 py-2 rounded-lg font-bold">Играть</button>
+                  </div>
+                  
+                  <div className="glass rounded-xl p-6 text-center opacity-50">
+                    <h3 className="text-xl font-bold mb-2">В разработке... 👲</h3>
+                    <p className="text-gray-400">Скоро здесь появится новая игра!</p>
+                  </div>
+                  
+                  <div className="glass rounded-xl p-6 text-center opacity-50">
+                    <h3 className="text-xl font-bold mb-2">В разработке... 👲</h3>
+                    <p className="text-gray-400">Ожидайте обновлений!</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -838,22 +1000,23 @@
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-bold">Пригласить трёх друзей</h3>
-                        <p className="text-sm opacity-75">Прогресс: {tasks.invite.count}/3 | Награда: 5 ⭐</p>
+                        <p className="text-sm opacity-75">Награда: 30 ⭐</p>
                       </div>
                       {tasks.invite.completed && <span className="text-green-400 text-2xl">✅</span>}
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
                       <div 
                         className="bg-blue-500 h-2 rounded-full transition-all"
-                        style={{width: `${(tasks.invite.count / 3) * 100}%`}}
+                        style={{width: `${Math.min((tasks.invite.count / 3) * 100, 100)}%`}}
                       />
                     </div>
+                    <p className="text-sm text-gray-400 mb-2">Прогресс: {tasks.invite.count}/3</p>
                     <button 
                       onClick={() => completeTask('invite')}
                       disabled={tasks.invite.completed}
                       className={`w-full py-2 rounded-lg ${tasks.invite.completed ? 'bg-green-600' : 'bg-blue-600'}`}
                     >
-                      {tasks.invite.completed ? 'Выполнено' : 'Пригласить'}
+                      {tasks.invite.completed ? 'Выполнено' : 'Пригласить друга'}
                     </button>
                   </div>
                 </div>
@@ -862,6 +1025,11 @@
 
             {currentScreen === 'profile' && (
               <div>
+                <div className="glass rounded-xl p-4 mb-4 flex justify-between items-center">
+                  <span className="text-gray-400">🟢 Игроков онлайн:</span>
+                  <span className="font-bold text-green-400">{onlineCount}</span>
+                </div>
+                
                 <h2 className="text-2xl font-bold mb-4 text-center">👤 Мой Профиль</h2>
                 <div className="glass rounded-xl p-6 text-center mb-4">
                   <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-4xl mb-3 overflow-hidden">
@@ -910,9 +1078,9 @@
                       <div key={i} className="aspect-square bg-gray-700/50 rounded-lg flex items-center justify-center text-2xl relative">
                         {inventory[i] ? (
                           <span 
-                            onClick={() => inventory[i].type === 'collectible' ? handleCollectibleClick(inventory[i]) : sellItem(inventory[i])} 
+                            onClick={() => sellItem(inventory[i])} 
                             className={`cursor-pointer ${inventory[i].type === 'collectible' ? 'animate-pulse' : ''}`}
-                            title={inventory[i].type === 'collectible' ? 'Коллекционный предмет - нажмите для связи с админом' : 'Нажмите чтобы продать'}
+                            title={inventory[i].type === 'collectible' ? 'Коллекционный предмет' : 'Нажмите чтобы продать'}
                           >
                             {inventory[i].emoji}
                           </span>
@@ -991,13 +1159,19 @@
                   <div className="text-center">
                     <p className="text-2xl font-bold mb-4">Выпало: {spinResult.name}!</p>
                     {spinResult.type === 'collectible' && (
-                      <p className="text-sm text-yellow-400 mb-4">⭐ Коллекционный предмет! Обратитесь к администрации.</p>
+                      <p className="text-sm text-yellow-400 mb-4">⭐ Коллекционный предмет!</p>
                     )}
                     <button 
-                      onClick={() => {setSelectedCase(null); setSpinResult(null);}}
-                      className="w-full bg-green-600 py-4 rounded-xl font-bold text-xl"
+                      onClick={() => {setSpinResult(null);}}
+                      className="w-full bg-green-600 py-4 rounded-xl font-bold text-xl mb-2"
                     >
-                      Забрать
+                      Забрать и продолжить
+                    </button>
+                    <button 
+                      onClick={() => {setSelectedCase(null); setSpinResult(null);}}
+                      className="w-full bg-gray-600 py-2 rounded-xl font-bold"
+                    >
+                      Вернуться к кейсам
                     </button>
                   </div>
                 ) : (
@@ -1037,10 +1211,6 @@
                     </button>
                   ))}
                 </div>
-                
-                <div className="mt-4 text-xs text-center opacity-50">
-                  <p>Адрес: {ADMIN_WALLET.slice(0, 10)}...{ADMIN_WALLET.slice(-6)}</p>
-                </div>
               </div>
             </div>
           )}
@@ -1062,6 +1232,13 @@
                 <span className="text-xs">Кейсы</span>
               </button>
               <button 
+                onClick={() => setCurrentScreen('games')}
+                className={`flex flex-col items-center p-2 rounded-lg ${currentScreen === 'games' ? 'text-blue-400' : 'text-gray-400'}`}
+              >
+                <span className="text-2xl">🎮</span>
+                <span className="text-xs">Игры</span>
+              </button>
+              <button 
                 onClick={() => setCurrentScreen('profile')}
                 className={`flex flex-col items-center p-2 rounded-lg ${currentScreen === 'profile' ? 'text-blue-400' : 'text-gray-400'}`}
               >
@@ -1078,3 +1255,4 @@
   </script>
 </body>
 </html>
+
