@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step By Step Game</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            secondary: '#8b5cf6',
+            accent: '#f59e0b',
+            dark: '#1f2937',
+            darker: '#111827'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin-slow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); } 50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); } }
+    .roulette-container { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+    .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .dark .glass { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 min-h-screen text-white overflow-x-hidden">
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    // ВСЯ ИГРА ЗДЕСЬ (сокращенная версия для одного файла)
+    const { useState, useEffect, useRef } = React;
+    
+    const TelegramWebApp = window.Telegram?.WebApp;
+    
+    const INITIAL_CASES = {
+      money: { id: 'money', name: 'Денежный', emoji: '💵', price: 350, color: 'from-green-400 to-green-600', locked: false },
+      gold: { id: 'gold', name: 'Золотой', emoji: '👑', price: 250, color: 'from-yellow-400 to-yellow-600', locked: false },
+      platinum: { id: 'platinum', name: 'Платина', emoji: '💎', price: 100, color: 'from-gray-300 to-gray-500', locked: false },
+      coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 25, color: 'from-gray-600 to-gray-800', locked: false },
+      elite: { id: 'elite', name: 'Элита', emoji: '🎖️', price: 500, color: 'from-red-400 to-red-600', locked: true, isNew: false },
+      diamond: { id: 'diamond', name: 'Алмаз', emoji: '💎', price: 50, color: 'from-blue-400 to-blue-600', locked: true, isNew: false }
+    };
+
+    const TON_RATES = [
+      { stars: 50, ton: 0.6 },
+      { stars: 250, ton: 3 },
+      { stars: 500, ton: 6 },
+      { stars: 1000, ton: 12 }
+    ];
+
+    function App() {
+      const [currentScreen, setCurrentScreen] = useState('cases');
+      const [balance, setBalance] = useState(0);
+      const [cases, setCases] = useState(INITIAL_CASES);
+      const [inventory, setInventory] = useState([]);
+      const [inventorySlots, setInventorySlots] = useState(5);
+      const [freeCases, setFreeCases] = useState(5);
+      const [tasks, setTasks] = useState({
+        subscribe: { completed: false, progress: 0 },
+        deposit: { completed: false, progress: 0 },
+        invite: { completed: false, progress: 0, count: 0 }
+      });
+      const [user, setUser] = useState({ name: 'Пользователь', avatar: null, username: null });
+      const [selectedCase, setSelectedCase] = useState(null);
+      const [isSpinning, setIsSpinning] = useState(false);
+      const [spinResult, setSpinResult] = useState(null);
+      const [showTopUp, setShowTopUp] = useState(false);
+      const [showPromo, setShowPromo] = useState(false);
+      const [promoCode, setPromoCode] = useState('');
+      const [promoError, setPromoError] = useState('');
+      const [promoSuccess, setPromoSuccess] = useState('');
+      const [adminAttempts, setAdminAttempts] = useState(0);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [adminPassword, setAdminPassword] = useState('');
+      const [adminScreen, setAdminScreen] = useState('stats');
+      const rouletteRef = useRef(null);
+
+      useEffect(() => {
+        if (TelegramWebApp) {
+          TelegramWebApp.ready();
+          TelegramWebApp.expand();
+          const tgUser = TelegramWebApp.initDataUnsafe?.user;
+          if (tgUser) {
+            setUser({
+              name: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : ''),
+              username: tgUser.username ? '@' + tgUser.username : null,
+              avatar: tgUser.photo_url || null
+            });
+          }
+        }
+        
+        const saved = localStorage.getItem('sbs_game_data');
+        if (saved) {
+          const data = JSON.parse(saved);
+          setBalance(data.balance || 0);
+          setCases(data.cases || INITIAL_CASES);
+          setInventory(data.inventory || []);
+          setFreeCases(data.freeCases ?? 5);
+          setTasks(data.tasks || tasks);
+          setInventorySlots(data.inventorySlots || 5);
+        }
+      }, []);
+
+      useEffect(() => {
+        localStorage.setItem('sbs_game_data', JSON.stringify({
+          balance, cases, inventory, freeCases, tasks, inventorySlots
+        }));
+      }, [balance, cases, inventory, freeCases, tasks, inventorySlots]);
+
+      const handleTitleClick = () => {
+        setAdminAttempts(prev => {
+          const newAttempts = prev + 1;
+          if (newAttempts >= 7) {
+            setIsAdmin(true);
+            return 0;
+          }
+          return newAttempts;
+        });
+      };
+
+      const checkAdminLogin = () => {
+        if (adminPassword === 'CASEPLAY_ADMIN_2025') {
+          setIsAdmin(true);
+          setAdminAttempts(0);
+        } else {
+          alert('Неверный пароль!');
+        }
+      };
+
+      const openCase = (caseType) => {
+        if (freeCases > 0 && caseType === 'diamond') {
+          setFreeCases(prev => prev - 1);
+          spinRoulette(caseType);
+        } else if (balance >= cases[caseType].price) {
+          setBalance(prev => prev - cases[caseType].price);
+          spinRoulette(caseType);
+        } else {
+          alert('Недостаточно звезд! Пополните баланс.');
+        }
+      };
+
+      const spinRoulette = (caseType) => {
+        setIsSpinning(true);
+        setSpinResult(null);
+        
+        const items = [
+          { id: 'stars_025', name: '0.25 ⭐️', chance: 95, type: 'stars', value: 0.25, emoji: '⭐' },
+          { id: 'bear', name: 'Мишка 🧸', chance: 3.7, type: 'item', sellPrice: 5, emoji: '🧸' },
+          { id: 'snoop', name: 'Снуп Дог 🐕', chance: 1.25, type: 'item', sellPrice: 85, emoji: '🐕' },
+          { id: 'diamond', name: 'Алмаз 💎', chance: 0.05, type: 'special', emoji: '💎' }
+        ];
+
+        setTimeout(() => {
+          const rand = Math.random() * 100;
+          let cumulative = 0;
+          let won = items[0];
+          
+          for (const item of items) {
+            cumulative += item.chance;
+            if (rand <= cumulative) {
+              won = item;
+              break;
+            }
+          }
+
+          setSpinResult(won);
+          setIsSpinning(false);
+          
+          if (won.type === 'stars') {
+            setBalance(prev => prev + won.value);
+          } else {
+            addToInventory(won);
+          }
+        }, 3000);
+      };
+
+      const addToInventory = (item) => {
+        if (inventory.length < inventorySlots) {
+          setInventory(prev => [...prev, { ...item, id: Date.now() }]);
+        } else {
+          alert('Инвентарь полон! Продайте предметы или купите слоты.');
+        }
+      };
+
+      const sellItem = (item) => {
+        if (confirm(`Продать ${item.name} за ${item.sellPrice} ⭐️?`)) {
+          setBalance(prev => prev + item.sellPrice);
+          setInventory(prev => prev.filter(i => i.id !== item.id));
+        }
+      };
+
+      const unlockSlot = () => {
+        if (balance >= 50) {
+          if (confirm('Разблокировать слот за 50 ⭐️?')) {
+            setBalance(prev => prev - 50);
+            setInventorySlots(prev => prev + 1);
+          }
+        } else {
+          alert('Недостаточно звезд!');
+        }
+      };
+
+      const completeTask = (taskId) => {
+        if (taskId === 'subscribe') {
+          window.open('https://t.me/stepbystepdelision', '_blank');
+          setTimeout(() => {
+            setTasks(prev => ({ ...prev, subscribe: { completed: true, progress: 100 } }));
+            setCases(prev => ({ ...prev, elite: { ...prev.elite, locked: false, isNew: true } }));
+          }, 2000);
+        } else if (taskId === 'deposit') {
+          setShowTopUp(true);
+        } else if (taskId === 'invite') {
+          const link = 'https://t.me/share/url?url=' + encodeURIComponent(window.location.href);
+          window.open(link, '_blank');
+          setTasks(prev => ({
+            ...prev,
+            invite: { ...prev.invite, count: prev.invite.count + 1 }
+          }));
+          if (tasks.invite.count >= 2) {
+            setTasks(prev => ({ ...prev, invite: { completed: true, progress: 100 } }));
+            setBalance(b => b + 5);
+          }
+        }
+      };
+
+      const checkPromo = () => {
+        if (promoCode.toUpperCase() === 'DIAMOND') {
+          setCases(prev => ({
+            ...prev,
+            diamond: { ...prev.diamond, locked: false, isNew: true }
+          }));
+          setPromoSuccess('Промокод активирован! Получено 2 кейса Алмаз!');
+          setTimeout(() => {
+            setCases(prev => ({
+              ...prev,
+              diamond: { ...prev.diamond, locked: false, isNew: true }
+            }));
+          }, 100);
+          setPromoCode('');
+        } else {
+          setPromoError('Ошибка! Промокод не найден');
+          setTimeout(() => setPromoError(''), 3000);
+        }
+      };
+
+      const topUpBalance = (stars, ton) => {
+        const tonLink = `ton://transfer/UQBDGJ...?amount=${ton * 1000000000}&text=Buy${stars}Stars`;
+        window.open(tonLink, '_blank');
+        setShowTopUp(false);
+      };
+
+      if (isAdmin) {
+        return (
+          <div className="min-h-screen bg-gray-900 p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-white">🔐 Админ-панель</h1>
+                <button onClick={() => setIsAdmin(false)} className="text-gray-400 hover:text-white">Выйти</button>
+              </div>
+              
+              <div className="flex gap-2 mb-6 overflow-x-auto">
+                {['stats', 'users', 'cases', 'tasks', 'settings'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setAdminScreen(tab)}
+                    className={`px-4 py-2 rounded-lg capitalize ${adminScreen === tab ? 'bg-indigo-600' : 'bg-gray-700'}`}
+                  >
+                    {tab === 'stats' && '📊'}
+                    {tab === 'users' && '👥'}
+                    {tab === 'cases' && '🎁'}
+                    {tab === 'tasks' && '📝'}
+                    {tab === 'settings' && '⚙️'} {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className="glass rounded-xl p-6">
+                {adminScreen === 'stats' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <div className="text-gray-400">Всего игроков</div>
+                      <div className="text-3xl font-bold">1</div>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <div className="text-gray-400">Общий баланс</div>
+                      <div className="text-3xl font-bold">{balance.toFixed(2)} ⭐</div>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <div className="text-gray-400">Открыто кейсов</div>
+                      <div className="text-3xl font-bold">{5 - freeCases}</div>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <div className="text-gray-400">Подарков</div>
+                      <div className="text-3xl font-bold">{inventory.length}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {adminScreen === 'users' && (
+                  <div>
+                    <h3 className="text-lg mb-4">Управление пользователями</h3>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span>{user.name}</span>
+                        <span>{balance.toFixed(2)} ⭐</span>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <button 
+                          onClick={() => setBalance(b => b + 100)}
+                          className="bg-green-600 px-3 py-1 rounded text-sm"
+                        >
+                          +100 ⭐
+                        </button>
+                        <button 
+                          onClick={() => setCases(prev => ({...prev, diamond: {...prev.diamond, locked: false}}))}
+                          className="bg-blue-600 px-3 py-1 rounded text-sm"
+                        >
+                          +Кейс
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {adminScreen === 'cases' && (
+                  <div>
+                    <h3 className="text-lg mb-4">Управление кейсами</h3>
+                    {Object.values(cases).map(c => (
+                      <div key={c.id} className="bg-gray-800 p-3 rounded-lg mb-2 flex justify-between">
+                        <span>{c.emoji} {c.name}</span>
+                        <span>{c.price} ⭐</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {adminScreen === 'tasks' && (
+                  <div>
+                    <h3 className="text-lg mb-4">Статус заданий</h3>
+                    {Object.entries(tasks).map(([key, task]) => (
+                      <div key={key} className="bg-gray-800 p-3 rounded-lg mb-2">
+                        <div className="flex justify-between">
+                          <span className="capitalize">{key}</span>
+                          <span className={task.completed ? 'text-green-400' : 'text-yellow-400'}>
+                            {task.completed ? '✅ Выполнено' : '⏳ В процессе'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {adminScreen === 'settings' && (
+                  <div>
+                    <h3 className="text-lg mb-4">Настройки</h3>
+                    <button 
+                      onClick={() => {localStorage.clear(); window.location.reload();}}
+                      className="bg-red-600 px-4 py-2 rounded-lg"
+                    >
+                      🗑️ Сбросить все данные
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen pb-24">
+          {/* Header */}
+          <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
+            <h1 
+              onClick={handleTitleClick}
+              className="text-xl font-bold cursor-pointer select-none"
+            >
+              Step By Step Game
+            </h1>
+            <button 
+              onClick={() => alert('Пополните баланс 🎯')}
+              className="bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full font-bold text-gray-900 shadow-lg"
+            >
+              {balance.toFixed(2)} ⭐
+            </button>
+          </header>
+
+          {/* Main Content */}
+          <main className="p-4 max-w-md mx-auto">
+            {currentScreen === 'cases' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-center">🎰 Кейсы</h2>
+                {freeCases > 0 && (
+                  <div className="bg-green-500/20 border border-green-500 rounded-lg p-3 mb-4 text-center">
+                    🎁 Бесплатных кейсов: {freeCases}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.values(cases).map(c => (
+                    <div key={c.id} className={`glass rounded-xl p-4 relative ${c.locked ? 'opacity-75' : ''}`}>
+                      {c.isNew && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
+                          Новое!
+                        </span>
+                      )}
+                      <div className={`w-16 h-16 mx-auto rounded-lg bg-gradient-to-br ${c.color} flex items-center justify-center text-3xl mb-2`}>
+                        {c.emoji}
+                      </div>
+                      <h3 className="font-bold text-center">{c.name}</h3>
+                      <p className="text-center text-sm opacity-75">{c.price} ⭐</p>
+                      <button 
+                        onClick={() => c.locked ? alert('Кейс заблокирован! Выполните задания.') : setSelectedCase(c)}
+                        className={`w-full mt-2 py-2 rounded-lg font-bold ${c.locked ? 'bg-gray-600' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}`}
+                      >
+                        {c.locked ? '🔒' : 'Открыть'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentScreen === 'tasks' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-center">📋 Мои Задания</h2>
+                <div className="space-y-4">
+                  <div className={`glass rounded-xl p-4 ${tasks.subscribe.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold">Подпишись на канал</h3>
+                        <p className="text-sm opacity-75">Награда: x1 кейс «Элита»</p>
+                      </div>
+                      {tasks.subscribe.completed && <span className="text-green-400 text-2xl">✅</span>}
+                    </div>
+                    <button 
+                      onClick={() => completeTask('subscribe')}
+                      disabled={tasks.subscribe.completed}
+                      className={`w-full py-2 rounded-lg ${tasks.subscribe.completed ? 'bg-green-600' : 'bg-blue-600'}`}
+                    >
+                      {tasks.subscribe.completed ? 'Выполнено' : 'Подписаться'}
+                    </button>
+                  </div>
+
+                  <div className={`glass rounded-xl p-4 ${tasks.deposit.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold">Пополнить баланс на 100 ⭐</h3>
+                        <p className="text-sm opacity-75">Награда: кейс «Алмаз»</p>
+                      </div>
+                      {tasks.deposit.completed && <span className="text-green-400 text-2xl">✅</span>}
+                    </div>
+                    <button 
+                      onClick={() => completeTask('deposit')}
+                      className={`w-full py-2 rounded-lg ${tasks.deposit.completed ? 'bg-green-600' : 'bg-blue-600'}`}
+                    >
+                      {tasks.deposit.completed ? 'Выполнено' : 'Пополнить'}
+                    </button>
+                  </div>
+
+                  <div className={`glass rounded-xl p-4 ${tasks.invite.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold">Пригласить трёх друзей</h3>
+                        <p className="text-sm opacity-75">Прогресс: {tasks.invite.count}/3 | Награда: 5 ⭐</p>
+                      </div>
+                      {tasks.invite.completed && <span className="text-green-400 text-2xl">✅</span>}
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all"
+                        style={{width: `${(tasks.invite.count / 3) * 100}%`}}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => completeTask('invite')}
+                      disabled={tasks.invite.completed}
+                      className={`w-full py-2 rounded-lg ${tasks.invite.completed ? 'bg-green-600' : 'bg-blue-600'}`}
+                    >
+                      {tasks.invite.completed ? 'Выполнено' : 'Пригласить'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentScreen === 'profile' && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4 text-center">👤 Мой Профиль</h2>
+                <div className="glass rounded-xl p-6 text-center mb-4">
+                  <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-4xl mb-3 overflow-hidden">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      user.name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold">{user.name}</h3>
+                  {user.username && <p className="text-gray-400">{user.username}</p>}
+                </div>
+
+                <button 
+                  onClick={() => setShowTopUp(true)}
+                  className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold py-3 rounded-xl mb-4 shadow-lg"
+                >
+                  Пополнить баланс ⭐
+                </button>
+
+                <div className="glass rounded-xl p-4 mb-4">
+                  <h3 className="font-bold mb-2">🎁 Промокод</h3>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      placeholder="ВВЕДИТЕ ПРОМОКОД"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-center uppercase"
+                    />
+                    <button 
+                      onClick={checkPromo}
+                      className="bg-indigo-600 px-4 py-2 rounded-lg font-bold"
+                    >
+                      OK
+                    </button>
+                  </div>
+                  {promoError && <p className="text-red-400 text-sm mt-2 text-center">{promoError}</p>}
+                  {promoSuccess && <p className="text-green-400 text-sm mt-2 text-center">{promoSuccess}</p>}
+                </div>
+
+                <div className="glass rounded-xl p-4">
+                  <h3 className="font-bold mb-3">🎒 Инвентарь ({inventory.length}/{inventorySlots})</h3>
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    {[...Array(inventorySlots)].map((_, i) => (
+                      <div key={i} className="aspect-square bg-gray-700/50 rounded-lg flex items-center justify-center text-2xl relative">
+                        {inventory[i] ? (
+                          <span onClick={() => sellItem(inventory[i])} className="cursor-pointer">
+                            {inventory[i].emoji}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600 text-xs">Пусто</span>
+                        )}
+                      </div>
+                    ))}
+                    {[...Array(5)].map((_, i) => (
+                      <button 
+                        key={`lock-${i}`}
+                        onClick={unlockSlot}
+                        className="aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl border-2 border-dashed border-gray-600"
+                      >
+                        🔒
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Case Modal */}
+          {selectedCase && (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+              <div className="glass rounded-2xl p-6 max-w-sm w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">{selectedCase.emoji} {selectedCase.name}</h3>
+                  <button onClick={() => setSelectedCase(null)} className="text-2xl">&times;</button>
+                </div>
+                
+                <div className="relative mb-4">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
+                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-red-500"></div>
+                  </div>
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 z-10">
+                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-red-500"></div>
+                  </div>
+                  
+                  <div className="roulette-container bg-gray-800 rounded-lg h-32 overflow-hidden relative">
+                    <div className={`flex items-center h-full ${isSpinning ? 'animate-pulse' : ''}`}>
+                      {isSpinning ? (
+                        <div className="flex gap-4 px-4 animate-[spin-slow_0.5s_linear_infinite]">
+                          {[...Array(20)].map((_, i) => (
+                            <div key={i} className="w-24 h-24 flex-shrink-0 bg-gray-700 rounded-lg flex items-center justify-center text-3xl">
+                              {['⭐', '🧸', '🐕', '💎'][i % 4]}
+                            </div>
+                          ))}
+                        </div>
+                      ) : spinResult ? (
+                        <div className="w-full flex justify-center">
+                          <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-4xl animate-bounce">
+                            {spinResult.emoji}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full text-center text-gray-500">Нажмите кнопку для открытия</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-sm text-center mb-4 opacity-75">
+                  <p className="font-bold mb-1">Возможные награды:</p>
+                  <p>0.25 ⭐ (95%) | 🧸 Мишка (3.7%)</p>
+                  <p>🐕 Снуп Дог (1.25%) | 💎 Алмаз (0.05%)</p>
+                </div>
+
+                {spinResult ? (
+                  <div className="text-center">
+                    <p className="text-xl font-bold mb-2">Выпало: {spinResult.name}!</p>
+                    <button 
+                      onClick={() => {setSelectedCase(null); setSpinResult(null);}}
+                      className="w-full bg-green-600 py-3 rounded-xl font-bold"
+                    >
+                      Забрать
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => openCase(selectedCase.id)}
+                    disabled={isSpinning}
+                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 py-3 rounded-xl font-bold disabled:opacity-50"
+                  >
+                    {isSpinning ? 'Крутим...' : `Открыть за ${selectedCase.price} ⭐`}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Top Up Modal */}
+          {showTopUp && (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+              <div className="glass rounded-2xl p-6 max-w-sm w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">💳 Пополнение</h3>
+                  <button onClick={() => setShowTopUp(false)} className="text-2xl">&times;</button>
+                </div>
+                <div className="space-y-3">
+                  {TON_RATES.map((rate) => (
+                    <button
+                      key={rate.stars}
+                      onClick={() => topUpBalance(rate.stars, rate.ton)}
+                      className="w-full glass p-4 rounded-xl flex justify-between items-center hover:bg-white/10"
+                    >
+                      <span className="font-bold">+{rate.stars} звезд ⭐</span>
+                      <span className="text-yellow-400">{rate.ton} TON</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-center mt-4 opacity-50">Нажмите для оплаты через TON</p>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Navigation */}
+          <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
+            <div className="max-w-md mx-auto flex justify-around">
+              <button 
+                onClick={() => setCurrentScreen('tasks')}
+                className={`flex flex-col items-center p-2 rounded-lg ${currentScreen === 'tasks' ? 'text-blue-400' : 'text-gray-400'}`}
+              >
+                <span className="text-2xl">📋</span>
+                <span className="text-xs">Задания</span>
+              </button>
+              <button 
+                onClick={() => setCurrentScreen('cases')}
+                className={`flex flex-col items-center p-2 rounded-lg ${currentScreen === 'cases' ? 'text-blue-400' : 'text-gray-400'}`}
+              >
+                <span className="text-2xl">🎁</span>
+                <span className="text-xs">Кейсы</span>
+              </button>
+              <button 
+                onClick={() => setCurrentScreen('profile')}
+                className={`flex flex-col items-center p-2 rounded-lg ${currentScreen === 'profile' ? 'text-blue-400' : 'text-gray-400'}`}
+              >
+                <span className="text-2xl">👤</span>
+                <span className="text-xs">Профиль</span>
+              </button>
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
