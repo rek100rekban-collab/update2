@@ -6,7 +6,7 @@
   <title>Step By Step Game</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase только для аукциона и онлайна -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script>
@@ -31,6 +31,7 @@
     .fullscreen-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; overflow-y: auto; }
     .auction-circle { width: 300px; height: 300px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.3); position: relative; overflow: hidden; background: conic-gradient(from 0deg, rgba(99,102,241,0.3), rgba(168,85,247,0.3), rgba(99,102,241,0.3)); }
     .ball { position: absolute; width: 30px; height: 30px; background: radial-gradient(circle at 30% 30%, #fff, #fbbf24); border-radius: 50%; box-shadow: 0 0 20px rgba(251, 191, 36, 0.8); z-index: 10; transition: all 0.1s linear; transform: translate(-50%, -50%); }
+    .player-sector { position: absolute; width: 100%; height: 100%; transform-origin: center; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 min-h-screen text-white overflow-x-hidden">
@@ -43,15 +44,15 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-    // Firebase Config - замени на свой!
+    // ВАШ РЕАЛЬНЫЙ FIREBASE КОНФИГ
     const firebaseConfig = {
-      apiKey: "AIzaSyDummyKeyForGame123",
-      authDomain: "step-by-step-game.firebaseapp.com",
-      databaseURL: "https://step-by-step-game-default-rtdb.firebaseio.com",
-      projectId: "step-by-step-game",
-      storageBucket: "step-by-step-game.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef"
+      apiKey: "REMOVED_FIREBASE_API_KEY",
+      authDomain: "step-by-step-279df.firebaseapp.com",
+      databaseURL: "https://step-by-step-279df-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "step-by-step-279df",
+      storageBucket: "step-by-step-279df.firebasestorage.app",
+      messagingSenderId: "302641152597",
+      appId: "1:302641152597:web:6479b9ae03104666cd8adc"
     };
     
     // Инициализация Firebase
@@ -64,7 +65,6 @@
     const ADMIN_WALLET = 'UQAWqaIPFSg81l9MlgAx0HBE9o3gpJMhk1dnyryKJXhWNHIc';
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     
-    // Награды для кейсов (честные шансы)
     const CASE_REWARDS = {
       diamond: [
         { id: 'stars_8', name: '8 ⭐️', chance: 70, type: 'stars', value: 8, emoji: '⭐' },
@@ -172,7 +172,6 @@
       const [showCollectibleModal, setShowCollectibleModal] = useState(false);
       const [selectedCollectible, setSelectedCollectible] = useState(null);
       
-      // Аукцион состояния
       const [currentGame, setCurrentGame] = useState(null);
       const [auctionData, setAuctionData] = useState(null);
       const [myBet, setMyBet] = useState(25);
@@ -180,7 +179,28 @@
       const [ballPosition, setBallPosition] = useState({ x: 50, y: 50 });
       const [auctionStatus, setAuctionStatus] = useState('waiting');
 
-      // Загрузка данных
+      // Firebase подписки
+      useEffect(() => {
+        if (currentGame?.type === 'auction' && currentGame.lobbyId) {
+          const lobbyRef = db.ref('auctions/lobby_' + currentGame.lobbyId);
+          lobbyRef.on('value', (snap) => {
+            const data = snap.val();
+            if (data) {
+              setAuctionData(data);
+              setAuctionStatus(data.status || 'waiting');
+              if (data.players?.[user.id]) {
+                setHasBet(true);
+                setMyBet(data.players[user.id].bet);
+              } else {
+                setHasBet(false);
+              }
+              if (data.ballPosition) setBallPosition(data.ballPosition);
+            }
+          });
+          return () => lobbyRef.off();
+        }
+      }, [currentGame, user.id]);
+
       useEffect(() => {
         if (TelegramWebApp) {
           TelegramWebApp.ready();
@@ -194,8 +214,6 @@
               id: tgUser.id.toString()
             };
             setUser(newUser);
-            
-            // Регистрация в списке пользователей
             const savedUsers = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
             if (!savedUsers.find(u => u.id === newUser.id)) {
               savedUsers.push({ ...newUser, balance: 0, inventory: [], lastActive: Date.now() });
@@ -229,82 +247,11 @@
         }
       }, [user.id]);
 
-      // Подписка на аукцион
-      useEffect(() => {
-        if (currentGame?.type === 'auction' && currentGame.lobbyId) {
-          const lobbyRef = db.ref('auctions/lobby_' + currentGame.lobbyId);
-          lobbyRef.on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-              setAuctionData(data);
-              setAuctionStatus(data.status || 'waiting');
-              if (data.players?.[user.id]) {
-                setHasBet(true);
-                setMyBet(data.players[user.id].bet);
-              } else {
-                setHasBet(false);
-              }
-              if (data.ballPosition) setBallPosition(data.ballPosition);
-            }
-          });
-          return () => lobbyRef.off();
-        }
-      }, [currentGame, user.id]);
-
       useEffect(() => {
         localStorage.setItem('sbs_game_data', JSON.stringify({
           balance, cases, inventory, tasks, inventorySlots, pendingPayments, usedPromos
         }));
       }, [balance, cases, inventory, tasks, inventorySlots, pendingPayments, usedPromos]);
-
-      // Админ функции
-      const handleTitleClick = () => {
-        const newAttempts = adminAttempts + 1;
-        setAdminAttempts(newAttempts);
-        if (newAttempts >= 11) {
-          setShowAdminLogin(true);
-          setAdminAttempts(0);
-        }
-      };
-
-      const checkAdminLogin = () => {
-        if (adminLogin === 'REMOVED' && adminPassword === 'REMOVED') {
-          setIsAdmin(true);
-          setShowAdminLogin(false);
-          setAdminLogin('');
-          setAdminPassword('');
-          // Загружаем актуальный список пользователей
-          setAllUsers(JSON.parse(localStorage.getItem('sbs_all_users') || '[]'));
-        } else {
-          alert('Неверный логин или пароль!');
-        }
-      };
-
-      const adminGiveReward = (targetUserId, reward) => {
-        const savedUsers = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
-        const userIdx = savedUsers.findIndex(u => u.id === targetUserId);
-        
-        if (userIdx !== -1) {
-          if (reward.type === 'stars') {
-            savedUsers[userIdx].balance = (savedUsers[userIdx].balance || 0) + reward.amount;
-            if (targetUserId === user.id) setBalance(savedUsers[userIdx].balance);
-          } else if (reward.type === 'case') {
-            if (targetUserId === user.id) {
-              setCases(prev => ({
-                ...prev,
-                [reward.caseType]: { ...prev[reward.caseType], freeCount: (prev[reward.caseType].freeCount || 0) + reward.count }
-              }));
-            }
-          } else if (reward.type === 'item') {
-            savedUsers[userIdx].inventory = [...(savedUsers[userIdx].inventory || []), reward.item];
-            if (targetUserId === user.id) setInventory(savedUsers[userIdx].inventory);
-          }
-          
-          localStorage.setItem('sbs_all_users', JSON.stringify(savedUsers));
-          setAllUsers(savedUsers);
-          alert(`Награда выдана пользователю ${savedUsers[userIdx].name}!`);
-        }
-      };
 
       // Аукцион функции
       const joinAuctionLobby = async (lobbyId) => {
@@ -372,31 +319,96 @@
         
         const players = Object.entries(data.players);
         const totalBet = players.reduce((sum, [, p]) => sum + p.bet, 0);
-        const angle = Math.atan2(finalY - 50, finalX - 50) * 180 / Math.PI;
-        const normalizedAngle = angle < 0 ? angle + 360 : angle;
         
-        let currentAngle = 0, winner = null;
-        for (const [playerId, playerData] of players) {
+        // Вычисляем угол шарика относительно центра
+        const dx = finalX - 50;
+        const dy = finalY - 50;
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (angle < 0) angle += 360;
+        
+        // Распределяем сектора по часовой стрелке
+        let currentAngle = 0;
+        let winner = null;
+        
+        // Сортируем по времени ставки
+        const sortedPlayers = players.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        
+        for (const [playerId, playerData] of sortedPlayers) {
           const sectorSize = (playerData.bet / totalBet) * 360;
-          if (normalizedAngle >= currentAngle && normalizedAngle < currentAngle + sectorSize) {
+          const endAngle = currentAngle + sectorSize;
+          
+          // Проверяем попадание угла шарика в сектор
+          if (angle >= currentAngle && angle < endAngle) {
             winner = { id: playerId, ...playerData };
             break;
           }
-          currentAngle += sectorSize;
+          currentAngle = endAngle;
         }
-        if (!winner) winner = { id: players[0][0], ...players[0][1] };
         
-        await lobbyRef.update({ status: 'finished', winner, winningSector: normalizedAngle });
+        if (!winner) winner = { id: sortedPlayers[0][0], ...sortedPlayers[0][1] };
+        
+        await lobbyRef.update({ status: 'finished', winner: winner, finalBallPosition: { x: finalX, y: finalY } });
         
         if (winner.id === user.id) {
           setBalance(prev => prev + data.prize.value + winner.bet);
-          alert(`🎉 Вы выиграли ${data.prize.name}!`);
+          alert(`🎉 Вы выиграли ${data.prize.name} (+${data.prize.value}⭐) и возврат ставки ${winner.bet}⭐!`);
+        } else {
+          alert(`Победил ${winner.name}! Приз: ${data.prize.name}`);
         }
         
-        setTimeout(async () => { await lobbyRef.remove(); setCurrentGame(null); }, 5000);
+        setTimeout(async () => {
+          await lobbyRef.remove();
+          setCurrentGame(null);
+        }, 5000);
       };
 
-      // Остальные функции игры
+      const handleTitleClick = () => {
+        const newAttempts = adminAttempts + 1;
+        setAdminAttempts(newAttempts);
+        if (newAttempts >= 11) {
+          setShowAdminLogin(true);
+          setAdminAttempts(0);
+        }
+      };
+
+      const checkAdminLogin = () => {
+        if (adminLogin === 'REMOVED' && adminPassword === 'REMOVED') {
+          setIsAdmin(true);
+          setShowAdminLogin(false);
+          setAdminLogin('');
+          setAdminPassword('');
+          setAllUsers(JSON.parse(localStorage.getItem('sbs_all_users') || '[]'));
+        } else {
+          alert('Неверный логин или пароль!');
+        }
+      };
+
+      const adminGiveReward = (targetUserId, reward) => {
+        const savedUsers = JSON.parse(localStorage.getItem('sbs_all_users') || '[]');
+        const userIdx = savedUsers.findIndex(u => u.id === targetUserId);
+        
+        if (userIdx !== -1) {
+          if (reward.type === 'stars') {
+            savedUsers[userIdx].balance = (savedUsers[userIdx].balance || 0) + reward.amount;
+            if (targetUserId === user.id) setBalance(savedUsers[userIdx].balance);
+          } else if (reward.type === 'case') {
+            if (targetUserId === user.id) {
+              setCases(prev => ({
+                ...prev,
+                [reward.caseType]: { ...prev[reward.caseType], freeCount: (prev[reward.caseType].freeCount || 0) + reward.count }
+              }));
+            }
+          } else if (reward.type === 'item') {
+            savedUsers[userIdx].inventory = [...(savedUsers[userIdx].inventory || []), reward.item];
+            if (targetUserId === user.id) setInventory(savedUsers[userIdx].inventory);
+          }
+          
+          localStorage.setItem('sbs_all_users', JSON.stringify(savedUsers));
+          setAllUsers(savedUsers);
+          alert(`Награда выдана пользователю ${savedUsers[userIdx].name}!`);
+        }
+      };
+
       const getCasePrice = (caseType) => {
         const c = cases[caseType];
         if (caseType === 'diamond' && c.freeCount > 0) return 0;
@@ -413,7 +425,7 @@
           setBalance(prev => prev - price);
           spinRoulette(caseType);
         } else {
-          alert('Недостаточно звезд!');
+          alert('Недостаточно звезд! Пополните баланс.');
         }
       };
 
@@ -424,15 +436,25 @@
         
         setTimeout(() => {
           const rand = Math.random() * 100;
-          let cumulative = 0, won = items[0];
+          let cumulative = 0;
+          let won = items[0];
+          
           for (const item of items) {
             cumulative += item.chance;
-            if (rand <= cumulative) { won = item; break; }
+            if (rand <= cumulative) {
+              won = item;
+              break;
+            }
           }
+          
           setSpinResult(won);
           setIsSpinning(false);
-          if (won.type === 'stars') setBalance(prev => prev + won.value);
-          else addToInventory(won);
+          
+          if (won.type === 'stars') {
+            setBalance(prev => prev + won.value);
+          } else {
+            addToInventory(won);
+          }
         }, 3000);
       };
 
@@ -440,7 +462,7 @@
         if (inventory.length < inventorySlots) {
           setInventory(prev => [...prev, { ...item, id: Date.now(), uniqueId: Math.random().toString(36).substr(2, 9) }]);
         } else {
-          alert('Инвентарь полон!');
+          alert('Инвентарь полон! Продайте предметы или купите слоты.');
         }
       };
 
@@ -450,7 +472,7 @@
           setShowCollectibleModal(true);
           return;
         }
-        if (confirm(`Продать ${item.name} за ${item.sellPrice}⭐?`)) {
+        if (confirm(`Продать ${item.name} за ${item.sellPrice} ⭐️?`)) {
           setBalance(prev => prev + item.sellPrice);
           setInventory(prev => prev.filter(i => i.uniqueId !== item.uniqueId));
         }
@@ -458,7 +480,7 @@
 
       const unlockSlot = () => {
         if (balance >= 50) {
-          if (confirm('Разблокировать слот за 50⭐?')) {
+          if (confirm('Разблокировать слот за 50 ⭐️?')) {
             setBalance(prev => prev - 50);
             setInventorySlots(prev => prev + 1);
           }
@@ -472,12 +494,12 @@
           window.open('https://t.me/stepbystepdelision', '_blank');
           setTimeout(() => {
             setTasks(prev => ({ ...prev, subscribe: { completed: true, progress: 100 } }));
-            // ВАЖНО: Награда - 2 кейса Алмаз (исправлено!)
+            // НАГРАДА: 2 кейса Алмаз
             setCases(prev => ({ 
               ...prev, 
               diamond: { ...prev.diamond, freeCount: prev.diamond.freeCount + 2, isNew: true } 
             }));
-            alert('🎉 Получено 2 кейса Алмаз!');
+            alert('🎉 Задание выполнено! Получено 2 кейса Алмаз!');
           }, 2000);
         } else if (taskId === 'deposit') {
           setShowTopUp(true);
@@ -490,7 +512,7 @@
             if (newCount >= 3 && !tasks.invite.completed) {
               setTasks(prev => ({ ...prev, invite: { completed: true, progress: 100, count: newCount } }));
               setBalance(b => b + 30);
-              alert('🎉 Получено 30 звезд!');
+              alert('🎉 Вы пригласили 3 друзей! Получено 30 звезд!');
             }
           }, 2000);
         }
@@ -499,20 +521,90 @@
       const checkPromo = () => {
         const code = promoCode.toUpperCase();
         if (usedPromos.includes(code)) {
-          setPromoError('Промокод использован!');
+          setPromoError('Вы уже использовали этот промокод!');
+          setTimeout(() => setPromoError(''), 3000);
           return;
         }
         if (code === 'DIAMOND') {
-          setUsedPromos(prev => [...prev, code]);
+          setUsedPromos(prev => [...prev, 'DIAMOND']);
           setCases(prev => ({ ...prev, diamond: { ...prev.diamond, freeCount: prev.diamond.freeCount + 2 } }));
-          setPromoSuccess('Промокод активирован! +2 кейса Алмаз');
+          setPromoSuccess('Промокод активирован! Получено 2 кейса Алмаз!');
           setPromoCode('');
         } else {
-          setPromoError('Неверный промокод');
+          setPromoError('Ошибка! Промокод не найден');
+          setTimeout(() => setPromoError(''), 3000);
         }
       };
 
-      // АДМИН ПАНЕЛЬ (ПОЛНАЯ ВЕРСИЯ)
+      const generatePaymentId = () => {
+        return 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      };
+
+      const topUpBalance = (stars, ton) => {
+        const paymentId = generatePaymentId();
+        const memo = `SBS_${user.id}_${stars}_${paymentId}`;
+        
+        const newPayment = {
+          id: paymentId,
+          stars: stars,
+          ton: ton,
+          memo: memo,
+          status: 'pending',
+          createdAt: Date.now(),
+          userId: user.id
+        };
+        
+        setPendingPayments(prev => [...prev, newPayment]);
+        
+        const tonLink = `ton://transfer/${ADMIN_WALLET}?amount=${Math.round(ton * 1000000000)}&text=${encodeURIComponent(memo)}`;
+        window.open(tonLink, '_blank');
+        
+        setPaymentStatus(`Отправьте ${ton} TON с комментарием: ${memo}`);
+        setShowTopUp(false);
+        
+        setTimeout(() => checkPayment(paymentId), 10000);
+      };
+
+      const checkPayment = async (paymentId) => {
+        const payment = pendingPayments.find(p => p.id === paymentId);
+        if (!payment || payment.status === 'completed') return;
+
+        setPaymentStatus('Проверяем платеж...');
+
+        try {
+          const response = await fetch(`${TONCENTER_API}/getTransactions?address=${ADMIN_WALLET}&limit=20`);
+          const data = await response.json();
+
+          if (data.result && Array.isArray(data.result)) {
+            const foundTx = data.result.find(tx => {
+              const msg = tx.in_msg;
+              if (!msg) return false;
+              const amount = parseInt(msg.value) / 1000000000;
+              const comment = msg.message || '';
+              return comment.includes(payment.memo) && Math.abs(amount - payment.ton) < 0.01;
+            });
+
+            if (foundTx) {
+              setBalance(prev => prev + payment.stars);
+              setPendingPayments(prev => prev.map(p => 
+                p.id === paymentId ? {...p, status: 'completed', txHash: foundTx.transaction_id.hash} : p
+              ));
+              setPaymentStatus(`✅ Успешно! Зачислено ${payment.stars} звезд`);
+              
+              if (!tasks.deposit.completed && payment.stars >= 100) {
+                setTasks(prev => ({ ...prev, deposit: { completed: true, progress: 100 } }));
+              }
+              
+              setTimeout(() => setPaymentStatus(''), 3000);
+            } else {
+              setPaymentStatus('Платеж не найден. Попробуйте через минуту...');
+            }
+          }
+        } catch (error) {
+          setPaymentStatus('Ошибка проверки. Попробуйте позже.');
+        }
+      };
+
       if (isAdmin) {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -524,8 +616,18 @@
               
               <div className="flex gap-2 mb-6 overflow-x-auto">
                 {['stats', 'users', 'cases', 'tasks', 'payments', 'rewards', 'settings'].map(tab => (
-                  <button key={tab} onClick={() => setAdminScreen(tab)} className={`px-4 py-2 rounded-lg capitalize ${adminScreen === tab ? 'bg-indigo-600' : 'bg-gray-700'}`}>
-                    {tab === 'stats' && '📊'} {tab === 'users' && '👥'} {tab === 'cases' && '🎁'} {tab === 'tasks' && '📝'} {tab === 'payments' && '💳'} {tab === 'rewards' && '🎀'} {tab === 'settings' && '⚙️'} {tab}
+                  <button
+                    key={tab}
+                    onClick={() => setAdminScreen(tab)}
+                    className={`px-4 py-2 rounded-lg capitalize ${adminScreen === tab ? 'bg-indigo-600' : 'bg-gray-700'}`}
+                  >
+                    {tab === 'stats' && '📊'}
+                    {tab === 'users' && '👥'}
+                    {tab === 'cases' && '🎁'}
+                    {tab === 'tasks' && '📝'}
+                    {tab === 'payments' && '💳'}
+                    {tab === 'rewards' && '🎀'}
+                    {tab === 'settings' && '⚙️'} {tab}
                   </button>
                 ))}
               </div>
@@ -671,7 +773,6 @@
         );
       }
 
-      // АУКЦИОН (ПОЛНЫЙ)
       if (currentGame?.type === 'auction') {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -789,7 +890,6 @@
         );
       }
 
-      // ОСНОВНОЙ ИНТЕРФЕЙС
       return (
         <div className="min-h-screen pb-24">
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
@@ -922,8 +1022,8 @@
             {currentScreen === 'profile' && (
               <div>
                 <div className="glass rounded-xl p-4 mb-4 flex justify-between items-center">
-                  <span className="text-gray-400">🟢 Игроков онлайн:</span>
-                  <span className="font-bold text-green-400">{onlineCount}</span>
+                  <span className="text-gray-400">🟢 Онлайн:</span>
+                  <span className="font-bold text-green-400">{onlineCount} игроков</span>
                 </div>
                 
                 <h2 className="text-2xl font-bold mb-4 text-center">👤 Мой Профиль</h2>
@@ -947,7 +1047,7 @@
                   {promoSuccess && <p className="text-green-400 text-sm mt-2 text-center">{promoSuccess}</p>}
                 </div>
 
-                <div className="glass rounded-xl p-4 mb-4">
+                <div className="glass rounded-xl p-4">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-bold">🎒 Инвентарь</h3>
                     <span className="text-sm text-gray-400">{inventory.length}/{inventorySlots}</span>
@@ -1039,7 +1139,7 @@
                 </div>
                 <div className="space-y-3">
                   {TON_RATES.map((rate) => (
-                    <button key={rate.stars} onClick={() => { /* логика пополнения */ }} className="w-full glass p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10">
+                    <button key={rate.stars} onClick={() => topUpBalance(rate.stars, rate.ton)} className="w-full glass p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10">
                       <span className="font-bold">+{rate.stars} звезд ⭐</span>
                       <span className="text-yellow-400 font-bold">{rate.ton} TON</span>
                     </button>
