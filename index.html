@@ -32,7 +32,8 @@
     .fullscreen-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; overflow-y: auto; }
     .ice-circle { width: 320px; height: 320px; border-radius: 50%; border: 4px solid rgba(0,210,255,0.5); position: relative; overflow: hidden; background: radial-gradient(circle, rgba(0,210,255,0.2) 0%, rgba(0,128,160,0.4) 100%); box-shadow: 0 0 30px rgba(0,210,255,0.3); }
     .ice-ball { position: absolute; width: 40px; height: 40px; background: radial-gradient(circle at 30% 30%, #fff, #00d2ff); border-radius: 50%; box-shadow: 0 0 20px rgba(0,210,255,0.8); z-index: 10; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.5); transition: left 0.025s linear, top 0.025s linear; }
-    .player-avatar { position: absolute; width: 36px; height: 36px; border-radius: 50%; border: 2px solid white; overflow: hidden; transform: translate(-50%, -50%); z-index: 5; }
+    .player-avatar { position: absolute; width: 36px; height: 36px; border-radius: 50%; border: 2px solid white; overflow: hidden; transform: translate(-50%, -50%); z-index: 5; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+    .player-circle { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.6; mix-blend-mode: screen; }
     .mystery-box { animation: float 2s ease-in-out infinite; }
   </style>
 </head>
@@ -209,7 +210,6 @@
             const lobbies = snapshot.val();
             if (lobbies) {
               for (const [lobbyId, lobbyData] of Object.entries(lobbies)) {
-                // Очищаем все лобби - сбрасываем в начальное состояние
                 await db.ref('iceLobbies/' + lobbyId).update({
                   status: 'waiting',
                   players: {},
@@ -228,7 +228,6 @@
           }
         };
         
-        // Запускаем очистку после инициализации
         if (!isLoading && user) {
           cleanupLobbies();
         }
@@ -411,7 +410,6 @@
               
               if (data.ballPosition) setBallPos(data.ballPosition);
               
-              // Проверяем, является ли текущий игрок победителем
               if (data.status === 'finished' && data.winner?.id === user?.id && !data.prizeGiven) {
                 setChestPrizes(data.prizes || []);
                 setShowPrizeChest(true);
@@ -421,7 +419,6 @@
                 setIsWinnerInLobby(false);
               }
               
-              // Таймер
               if (data.timerEnd && data.status === 'betting') {
                 const remaining = Math.max(0, Math.ceil((data.timerEnd - Date.now()) / 1000));
                 setTimerSeconds(remaining);
@@ -506,7 +503,6 @@
           const users = [];
           snap.forEach(child => users.push({ id: child.key, ...child.val() }));
           setAllUsers(users);
-          // Обновляем выбранного пользователя
           const updatedUser = users.find(u => u.id === targetUserId);
           if (updatedUser) setSelectedUser(updatedUser);
         });
@@ -536,9 +532,7 @@
           const data = snap.val();
           const playerCount = Object.keys(data.players || {}).length;
           
-          // Если лобби в процессе игры, не пускаем
           if (data.status === 'playing' || data.status === 'finished') {
-            // Очищаем лобби и начинаем заново
             await lobbyRef.update({
               status: 'waiting',
               players: {},
@@ -563,17 +557,14 @@
         
         const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
         
-        // Получаем текущих игроков
         const snap = await lobbyRef.once('value');
         const data = snap.val() || {};
         const playerCount = Object.keys(data.players || {}).length;
         
-        // Снимаем баланс
         const newBalance = balance - myBet;
         setBalance(newBalance);
         await db.ref(`users/${user.id}/balance`).set(newBalance);
         
-        // Добавляем игрока
         await lobbyRef.child('players/' + user.id).set({
           name: user.name,
           avatar: user.avatar,
@@ -583,7 +574,6 @@
           balance: newBalance
         });
         
-        // Если это первый игрок или после него - запускаем таймер
         if (playerCount >= 0) {
           const timerEnd = Date.now() + 10000;
           await lobbyRef.update({ 
@@ -591,7 +581,6 @@
             timerEnd: timerEnd
           });
           
-          // Запускаем игру через 10 секунд
           setTimeout(async () => {
             const currentSnap = await lobbyRef.once('value');
             const currentData = currentSnap.val();
@@ -606,7 +595,6 @@
         await lobbyRef.update({ status: 'playing', timerEnd: null });
         
         let x = 50, y = 50;
-        // Увеличенная скорость
         let vx = (Math.random() - 0.5) * 10;
         let vy = (Math.random() - 0.5) * 10;
         
@@ -614,44 +602,36 @@
           x += vx;
           y += vy;
           
-          // Расстояние от центра
           const dx = x - 50;
           const dy = y - 50;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxRadius = 42; // Не выходит за границу
+          const maxRadius = 42;
           
-          // Если шар достигает границы круга - отскакивает
           if (dist >= maxRadius) {
-            // Нормаль к поверхности (от центра к точке)
             const nx = dx / dist;
             const ny = dy / dist;
             
-            // Отражение скорости
             const dot = vx * nx + vy * ny;
             vx = vx - 2 * dot * nx;
             vy = vy - 2 * dot * ny;
             
-            // Возвращаем шар внутрь
             x = 50 + nx * (maxRadius - 1);
             y = 50 + ny * (maxRadius - 1);
             
-            // Замедление при отскоке
             vx *= 0.95;
             vy *= 0.95;
           }
           
-          // Замедление (трение)
           vx *= 0.998;
           vy *= 0.998;
           
           await lobbyRef.child('ballPosition').set({ x, y, vx, vy });
           
-          // Остановка когда скорость почти нулевая
           if (Math.abs(vx) < 0.05 && Math.abs(vy) < 0.05) {
             clearInterval(interval);
             await finishIceGame(lobbyRef, x, y);
           }
-        }, 25); // Быстрее обновление
+        }, 25);
       };
 
       const finishIceGame = async (lobbyRef, finalX, finalY) => {
@@ -662,7 +642,6 @@
         const players = Object.entries(data.players);
         const totalBet = players.reduce((sum, [, p]) => sum + p.bet, 0);
         
-        // Определяем победителя по секторам
         const dx = finalX - 50;
         const dy = finalY - 50;
         let angle = Math.atan2(dy, dx) * 180 / Math.PI;
@@ -681,7 +660,6 @@
         }
         if (!winner) winner = { id: sorted[0][0], ...sorted[0][1] };
         
-        // Генерируем 1 приз
         const rand = Math.random() * 100;
         let cum = 0, prize = ICE_ARENA_PRIZES[0];
         for (const p of ICE_ARENA_PRIZES) {
@@ -689,7 +667,6 @@
           if (rand <= cum) { prize = p; break; }
         }
         
-        // Выигрыш: 50% от общей ставки
         const winAmount = Math.floor(totalBet * 0.5);
         
         await lobbyRef.update({
@@ -702,13 +679,11 @@
           winAmount: winAmount
         });
         
-        // Если победитель - начисляем выигрыш
         if (winner.id === user.id) {
           const newUserBalance = balance + winAmount;
           setBalance(newUserBalance);
           await db.ref(`users/${user.id}/balance`).set(newUserBalance);
           
-          // Если приз - промокод DELLKO
           if (prize.type === 'promo') {
             const currentWonPromos = wonPromos;
             const newWonPromos = [...currentWonPromos, prize.code];
@@ -751,7 +726,6 @@
             alert(prize.message);
           }
           
-          // Помечаем приз как выданный
           await db.ref(`iceLobbies/${currentGame.lobbyId}/prizeGiven`).set(true);
           
           setTimeout(() => {
@@ -767,7 +741,6 @@
         
         const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
         
-        // Полный сброс всех данных
         await lobbyRef.update({
           status: 'waiting',
           players: {},
@@ -842,7 +815,6 @@
       };
 
       const sellItem = async (item) => {
-        // Особый обработчик для льда
         if (item.type === 'ice_gift') {
           setSelectedCollectible(item);
           setShowCollectibleModal(true);
@@ -1168,9 +1140,20 @@
         );
       }
 
-      // ЛЕДЯНОЙ КАТОК
+      // ЛЕДЯНОЙ КАТОК - с кругами игроков
       if (currentGame?.type === 'ice') {
         const totalBet = iceLobby?.players ? Object.values(iceLobby.players).reduce((s, p) => s + p.bet, 0) : 0;
+        
+        // Рассчитываем проценты и позиции игроков
+        const playersArray = iceLobby?.players ? Object.entries(iceLobby.players).map(([id, p], idx, arr) => {
+          const total = Object.values(iceLobby.players).reduce((s, pp) => s + pp.bet, 0);
+          const percent = (p.bet / total) * 100;
+          // Позиция на окружности (распределяем по порядку ставок)
+          const sortedArr = [...arr].sort((a, b) => a[1].timestamp - b[1].timestamp);
+          const playerIndex = sortedArr.findIndex(([oid]) => oid === id);
+          const angle = (playerIndex / sortedArr.length) * 360;
+          return { id, player: p, percent, angle };
+        }) : [];
         
         return (
           <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -1197,56 +1180,90 @@
 
               <div className="flex justify-center mb-6">
                 <div className="ice-circle relative">
-                  {/* Цветные сектора игроков */}
-                  {iceLobby?.players && Object.entries(iceLobby.players).map(([id, player], idx, arr) => {
-                    const total = Object.values(iceLobby.players).reduce((s, p) => s + p.bet, 0);
-                    const startAngle = arr.slice(0, idx).reduce((s, [, p]) => s + (p.bet / total) * 360, 0);
-                    const endAngle = startAngle + (player.bet / total) * 360;
-                    const midAngle = startAngle + (endAngle - startAngle) / 2;
+                  {/* Круги игроков - закрашивают каток в процентном соотношении */}
+                  {gameStatus !== 'waiting' && playersArray.map(({ id, player, percent, angle }, idx) => {
+                    // Размер круга зависит от процента ставки (мин 80px, макс 280px)
+                    const circleSize = 80 + (percent / 100) * 200;
+                    const angleRad = (angle - 90) * Math.PI / 180;
+                    const posX = 50 + 25 * Math.cos(angleRad);
+                    const posY = 50 + 25 * Math.sin(angleRad);
                     
                     return (
-                      <React.Fragment key={id}>
-                        <div className="absolute inset-0" style={{
-                          background: `conic-gradient(from ${startAngle}deg, ${player.color}80 0deg, ${player.color}80 ${endAngle - startAngle}deg, transparent ${endAngle - startAngle}deg)`,
-                          clipPath: 'circle(48% at 50% 50%)'
-                        }} />
-                        <div className="player-avatar" style={{
-                          left: `${50 + 35 * Math.cos((midAngle - 90) * Math.PI / 180)}%`,
-                          top: `${50 + 35 * Math.sin((midAngle - 90) * Math.PI / 180)}%`,
+                      <div
+                        key={id}
+                        className="player-circle"
+                        style={{
+                          left: posX + '%',
+                          top: posY + '%',
+                          width: circleSize + 'px',
+                          height: circleSize + 'px',
+                          background: player.color,
+                          boxShadow: `0 0 ${percent/3}px ${player.color}`
+                        }}
+                      >
+                        {/* Процент на круге */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm drop-shadow-lg" style={{textShadow: '0 0 3px black'}}>
+                            {Math.round(percent)}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Аватарки игроков */}
+                  {playersArray.map(({ id, player, angle }, idx) => {
+                    const angleRad = (angle - 90) * Math.PI / 180;
+                    // Аватар находится в центре круга игрока
+                    const avatarRadius = gameStatus !== 'waiting' ? 25 : 35;
+                    const posX = 50 + avatarRadius * Math.cos(angleRad);
+                    const posY = 50 + avatarRadius * Math.sin(angleRad);
+                    
+                    return (
+                      <div
+                        key={id}
+                        className="player-avatar"
+                        style={{
+                          left: posX + '%',
+                          top: posY + '%',
                           borderColor: player.color,
                           background: player.color
-                        }}>
-                          {player.avatar ? <img src={player.avatar} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-white flex items-center justify-center h-full">{player.name[0]}</span>}
-                        </div>
-                      </React.Fragment>
+                        }}
+                      >
+                        {player.avatar ? (
+                          <img src={player.avatar} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white font-bold text-xs">{player.name[0]}</span>
+                        )}
+                      </div>
                     );
                   })}
                   
                   {/* Знак вопроса или шар */}
                   {gameStatus === 'waiting' && !hasBet && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-cyan-400 shadow-lg shadow-cyan-500/50">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-cyan-400 shadow-lg shadow-cyan-500/50 z-20">
                       ❓
                     </div>
                   )}
                   
                   {gameStatus === 'betting' && !hasBet && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-yellow-400 shadow-lg shadow-yellow-500/50">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-yellow-400 shadow-lg shadow-yellow-500/50 z-20">
                       ❓
                     </div>
                   )}
                   
                   {gameStatus === 'betting' && hasBet && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-green-400">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-green-400 z-20">
                       ✓ Ставка!
                     </div>
                   )}
                   
                   {(gameStatus === 'playing') && (
-                    <div className="ice-ball" style={{ left: ballPos.x + '%', top: ballPos.y + '%' }} />
+                    <div className="ice-ball" style={{ left: ballPos.x + '%', top: ballPos.y + '%', zIndex: 30 }} />
                   )}
                   
                   {gameStatus === 'finished' && iceLobby?.finalBall && (
-                    <div className="ice-ball" style={{ left: iceLobby.finalBall.x + '%', top: iceLobby.finalBall.y + '%', background: '#ffd700', boxShadow: '0 0 30px #ffd700' }} />
+                    <div className="ice-ball" style={{ left: iceLobby.finalBall.x + '%', top: iceLobby.finalBall.y + '%', background: '#ffd700', boxShadow: '0 0 30px #ffd700', zIndex: 30 }} />
                   )}
                 </div>
               </div>
@@ -1367,7 +1384,7 @@
             </div>
           )}
 
-          {/* Модальное окно для льда */}
+          {/* Модальное окно для льда - с нужным текстом */}
           {showCollectibleModal && selectedCollectible?.type === 'ice_gift' && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full text-center">
@@ -1658,6 +1675,5 @@
   </script>
 </body>
 </html>
-
 
 
