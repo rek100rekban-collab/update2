@@ -75,16 +75,6 @@
         { id: 'bear', name: '🧸', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🧸' },
         { id: 'diamond_pro', name: '💎 PRO', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '💎' }
       ],
-      collector: [
-        { id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
-        { id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
-        { id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
-        { id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
-        { id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
-        { id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
-        { id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
-        { id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
-      ],
       diamond: [
         { id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐️' },
         { id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
@@ -145,9 +135,18 @@
         { id: 'car', name: '🚗 Автомобиль', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🚗' },
         { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
         { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
+      ],
+      collector: [
+        { id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
+        { id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
+        { id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
+        { id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
+        { id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
+        { id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
+        { id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
+        { id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
       ]
     };
-
     const ICE_ARENA_PRIZES = [
       { id: 'bear', name: '🧸 Мишка', chance: 40, type: 'item', sellPrice: 20, emoji: '🧸' },
       { id: 'gloves', name: '🧤 Варежки', chance: 30, type: 'item', sellPrice: 50, emoji: '🧤' },
@@ -160,27 +159,24 @@
       { id: 'scarf', name: '🧣 Зимнее сокровище', chance: 0.5, type: 'collectible', emoji: '🧣' },
       { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
     ];
-
     const INITIAL_CASES = {
       cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: false, freeCount: 0 },
       coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
       platinum: { id: 'platinum', name: 'Платина', emoji: '💎', price: 100, color: 'from-gray-300 to-gray-500', locked: false },
       gold: { id: 'gold', name: 'Золотой', emoji: '👑', price: 250, color: 'from-yellow-400 to-yellow-600', locked: false },
       money: { id: 'money', name: 'Денежный', emoji: '💵', price: 350, color: 'from-green-400 to-green-600', locked: false },
-      elite: { id: 'elite', name: 'Элита', emoji: '🎖', price: 500, color: 'from-red-400 to-red-600', locked: false, isNew: false, freeCount: 0 },
+      elite: { id: 'elite', name: 'Элита', emoji: '🎖', price: 500, color: 'from-red-400 to-red-600', locked: false, isNew: false },
       diamond: { id: 'diamond', name: 'Алмаз', emoji: '💎', price: 50, originalPrice: 50, discountPrice: 35, color: 'from-blue-400 to-blue-600', locked: false, isNew: false, freeCount: 0 },
       winter: { id: 'winter', name: 'Зимний', emoji: '☃️', price: 125, originalPrice: 150, discountPrice: 125, color: 'from-cyan-400 to-blue-500', locked: false, isNew: true, freeCount: 0 },
       major: { id: 'major', name: 'Мажор', emoji: '🤴', price: 800, color: 'from-purple-500 to-indigo-700', locked: true, isNew: false, freeCount: 0 },
       collector: { id: 'collector', name: 'Коллекционер', emoji: '🖼️', price: 650, color: 'from-rose-600 to-pink-800', locked: true, isNew: false, freeCount: 0 }
     };
-
     const TON_RATES = [
       { stars: 50, ton: 0.6 },
       { stars: 250, ton: 3 },
       { stars: 500, ton: 6 },
       { stars: 1000, ton: 12 }
     ];
-
     const STARS_PACKAGES = [
       { stars: 50, price: 50, name: '50 звезд' },
       { stars: 100, price: 100, name: '100 звезд' },
@@ -188,8 +184,7 @@
       { stars: 500, price: 500, name: '500 звезд' },
       { stars: 1000, price: 1000, name: '1000 звезд' }
     ];
-
-function App() {
+    function App() {
       const [currentScreen, setCurrentScreen] = useState('cases');
       const [balance, setBalance] = useState(0);
       const [cases, setCases] = useState(INITIAL_CASES);
@@ -226,7 +221,6 @@ function App() {
       const [showCollectibleModal, setShowCollectibleModal] = useState(false);
       const [selectedCollectible, setSelectedCollectible] = useState(null);
       const [isLoading, setIsLoading] = useState(true);
-      const [totalDeposits, setTotalDeposits] = useState(0);
       
       const [currentGame, setCurrentGame] = useState(null);
       const [iceLobby, setIceLobby] = useState(null);
@@ -244,9 +238,8 @@ function App() {
       const [selectedIceGift, setSelectedIceGift] = useState(null);
       const [withdrawAmount, setWithdrawAmount] = useState('');
       const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-      const [withdrawStep, setWithdrawStep] = useState(1);
+      const [totalDeposits, setTotalDeposits] = useState(0);
       const [lobbyTimer, setLobbyTimer] = useState(null);
-
       // Инициализация
       useEffect(() => {
         const initApp = async () => {
@@ -298,7 +291,7 @@ function App() {
                   players: {},
                   winner: null,
                   prizes: [],
-                  ballPosition: { x: 50, y: 50, v, vy: x: 00 },
+                  ballPosition: { x: 50, y: 50, vx: 0, vy: 0 },
                   timerEnd: null,
                   lastWinnerId: null,
                   allBetsPlaced: false,
@@ -356,7 +349,6 @@ function App() {
         
         initApp();
       }, []);
-
       // Онлайн статус
       useEffect(() => {
         if (user?.id) {
@@ -374,7 +366,6 @@ function App() {
           };
         }
       }, [user?.id]);
-
       // Сохранение данных
       useEffect(() => {
         if (user?.id && !isLoading) {
@@ -400,7 +391,6 @@ function App() {
           return () => clearInterval(interval);
         }
       }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, isLoading, totalDeposits]);
-
       // Сохранение при закрытии
       useEffect(() => {
         const handleBeforeUnload = async () => {
@@ -422,7 +412,6 @@ function App() {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
       }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, totalDeposits]);
-
       // Подписка на лобби
       useEffect(() => {
         if (currentGame?.type === 'ice' && currentGame.lobbyId) {
@@ -497,7 +486,6 @@ function App() {
           return () => lobbyRef.off();
         }
       }, [currentGame, user?.id, showPrizeChest, lobbyTimer]);
-
       if (isLoading || !user) {
         return (
           <div className="min-h-screen flex items-center justify-center">
@@ -505,7 +493,6 @@ function App() {
           </div>
         );
       }
-
       const handleTitleClick = () => {
         const newAttempts = adminAttempts + 1;
         setAdminAttempts(newAttempts);
@@ -514,7 +501,6 @@ function App() {
           setAdminAttempts(0);
         }
       };
-
       const checkAdminLogin = () => {
         if (adminLogin === '_*\\^BAGUETTE_642819_6281' && adminPassword === '3628874910ZTWMI_') {
           setIsAdmin(true);
@@ -528,7 +514,6 @@ function App() {
           alert('Неверный логин или пароль!');
         }
       };
-
       const adminGiveReward = async (targetUserId, reward) => {
         const snapshot = await db.ref('users/' + targetUserId).once('value');
         const userData = snapshot.val() || {};
@@ -568,14 +553,9 @@ function App() {
           const updatedCases = { ...userData.cases, major: { ...userData.cases?.major, locked: false } };
           await db.ref(`users/${targetUserId}/cases`).update({ major: { ...userData.cases?.major, locked: false } });
           if (targetUserId === user.id) setCases(updatedCases);
-        } else if (reward.type === 'unlock_collector') {
-          const updatedCases = { ...userData.cases, collector: { ...userData.cases?.collector, locked: false } };
-          await db.ref(`users/${targetUserId}/cases`).update({ collector: { ...userData.cases?.collector, locked: false } });
-          if (targetUserId === user.id) setCases(updatedCases);
         }
         alert('Награда выдана!');
       };
-
       const joinIceLobby = async (lobbyId) => {
         // Очищаем лобби при входе
         const lobbyRef = db.ref('iceLobbies/' + lobbyId);
@@ -605,7 +585,6 @@ function App() {
         
         setCurrentGame({ type: 'ice', lobbyId });
       };
-
       const placeBet = async () => {
         if (balance < myBet) { alert('Недостаточно звезд!'); return; }
         if (myBet < 25) { alert('Минимум 25⭐️!'); return; }
@@ -625,7 +604,6 @@ function App() {
         await lobbyRef.child('readyPlayers/' + user.id).remove();
         setIsReady(false);
       };
-
       const toggleReady = async () => {
         if (!hasBet) return;
         
@@ -658,7 +636,6 @@ function App() {
           setTimeout(() => startIceGame(lobbyRef), 5000);
         }
       };
-
       const startIceGame = async (lobbyRef) => {
         await lobbyRef.update({ status: 'playing' });
         let x = 50, y = 50, vx = (Math.random() - 0.5) * 20, vy = (Math.random() - 0.5) * 20;
@@ -705,7 +682,6 @@ function App() {
           }
         }, 25);
       };
-
       const finishIceGame = async (lobbyRef, finalX, finalY) => {
         const snap = await lobbyRef.once('value');
         const data = snap.val();
@@ -737,9 +713,9 @@ function App() {
         let cum = 0, wonPrize = ICE_ARENA_PRIZES[0];
         for (const prize of ICE_ARENA_PRIZES) {
           cum += prize.chance;
-          if (rand <= cum) { wonPrize = prize; break; }
+          if (rand <= cum) { wonPrize = prize; break;
+          }
         }
-
         // Если выиграл DELLKO - добавляем в wonPromos
         if (wonPrize.type === 'promo') {
           const currentWonPromos = data.wonPromos || [];
@@ -767,7 +743,6 @@ function App() {
           setBalance(b => b + winAmount);
         }
       };
-
       const openChest = async () => {
         if (openedChestCount < 1) {
           const prize = chestPrizes[0];
@@ -795,14 +770,12 @@ function App() {
           }, 1500);
         }
       };
-
       const getCasePrice = (caseType) => {
         const c = cases[caseType];
         if (c.freeCount > 0) return 0;
         if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
         return c.price;
       };
-
       const openCase = async (caseType) => {
         const price = getCasePrice(caseType);
         if (price > 0 && balance < price) { alert('Недостаточно звезд!'); return; }
@@ -837,7 +810,6 @@ function App() {
           }
         }, 3000);
       };
-
       const addToInventory = async (item) => {
         if (inventory.length < inventorySlots) {
           const newItem = { ...item, uniqueId: Date.now(), collected: Date.now() };
@@ -848,8 +820,7 @@ function App() {
           alert('Инвентарь полон!');
         }
       };
-
-const sellItem = async (item) => {
+      const sellItem = async (item) => {
         // Особая обработка для льда
         if (item.type === 'ice_gift') {
           setSelectedIceGift(item);
@@ -890,7 +861,6 @@ const sellItem = async (item) => {
           });
         }
       };
-
       const sellIceGift = async () => {
         if (!selectedIceGift) return;
         
@@ -908,12 +878,10 @@ const sellItem = async (item) => {
         setSelectedIceGift(null);
         alert('Продано за 25⭐️!');
       };
-
       const keepIceGift = () => {
         setShowIceGiftModal(false);
         setSelectedIceGift(null);
       };
-
       const unlockSlot = async () => {
         if (balance >= 50) {
           if (confirm('Разблокировать слот за 50 ⭐️?')) {
@@ -931,8 +899,7 @@ const sellItem = async (item) => {
           alert('Недостаточно звезд!');
         }
       };
-
-const checkPromo = async () => {
+      const checkPromo = async () => {
         const code = promoCode.toUpperCase();
         if (usedPromos.includes(code)) {
           setPromoError('Уже использован!');
@@ -975,11 +942,9 @@ const checkPromo = async () => {
           return;
         }
       };
-
       const generatePaymentId = () => {
         return 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       };
-
       const topUpBalance = async (stars, ton) => {
         const paymentId = generatePaymentId();
         const memo = `SBS_${user.id}_${stars}_${paymentId}`;
@@ -1004,18 +969,14 @@ const checkPromo = async () => {
         
         setTimeout(() => checkPayment(paymentId), 10000);
       };
-
       const checkPayment = async (paymentId) => {
         const payment = pendingPayments.find(p => p.id === paymentId);
         if (!payment || payment.status === 'completed') return;
-
         setCheckingPayment(true);
         setPaymentStatus('Проверяем платеж...');
-
         try {
           const response = await fetch(`${TONCENTER_API}/getTransactions?address=${ADMIN_WALLET}&limit=20`);
           const data = await response.json();
-
           if (data.result && Array.isArray(data.result)) {
             const foundTx = data.result.find(tx => {
               const msg = tx.in_msg;
@@ -1024,7 +985,6 @@ const checkPromo = async () => {
               const comment = msg.message || '';
               return comment.includes(payment.memo) && Math.abs(amount - payment.ton) < 0.01;
             });
-
             if (foundTx) {
               const newBalance = balance + payment.stars;
               const newTotalDeposits = totalDeposits + payment.stars;
@@ -1078,7 +1038,6 @@ const checkPromo = async () => {
           setCheckingPayment(false);
         }
       };
-
       // Покупка через Telegram Stars
       const buyStars = async (pkg) => {
         try {
@@ -1187,7 +1146,6 @@ const checkPromo = async () => {
           alert('Ошибка платежа. Попробуйте позже.');
         }
       };
-
       const completeTask = async (taskId) => {
         if (taskId === 'subscribe') {
           window.open('https://t.me/stepbystepdelision', '_blank');
@@ -1202,7 +1160,7 @@ const checkPromo = async () => {
                 tasks: newTasks,
                 cases: newCases
               });
-              alert('🎉 Получен кейс Элита! Теперь вы можете открыть его бесплатно.');
+              alert('🎉 Получен кейс Элита!');
             }
           }, 2000);
         } else if (taskId === 'deposit') {
@@ -1214,26 +1172,21 @@ const checkPromo = async () => {
           window.open(link, '_blank');
         }
       };
-
       const handleWithdraw = () => {
-        // ИЗМЕНЕНО: Теперь требуется 350⭐️ (задание depositMajor)
-        if (totalDeposits < 350) {
+        if (totalDeposits < 150) {
           setShowWithdrawModal(false);
           setShowTopUp(true);
-          alert('Вывод подарков доступен только при пополнении баланса 350 ⭐️');
+          alert('Вывод подарков доступен только при пополнении баланса 150 ⭐️');
         } else {
-          setWithdrawStep(1);
-          setWithdrawAmount('');
-          setShowWithdrawModal(true);
+          alert('Выберите количество звезд, которое желаете вывести');
+          // Здесь должна быть форма ввода, но для простоты просто показываем сообщение
         }
       };
-
       const confirmWithdraw = (type) => {
-        alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора!\n\nСсылка: https://t.me/stepbystepdelision');
+        alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора! https://t.me/stepbystepdelision');
         setShowWithdrawModal(false);
         setWithdrawAmount('');
       };
-
       // Рендер игрового поля с цветными зонами
       const renderIceArenaField = () => {
         if (!iceLobby?.players) return null;
@@ -1301,7 +1254,6 @@ const checkPromo = async () => {
           );
         });
       };
-
       if (isAdmin) {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -1318,7 +1270,6 @@ const checkPromo = async () => {
                   </button>
                 ))}
               </div>
-
               <div className="glass rounded-xl p-6">
                 {adminScreen === 'stats' && (
                   <div className="grid grid-cols-2 gap-4">
@@ -1344,7 +1295,6 @@ const checkPromo = async () => {
                 {adminScreen === 'users' && selectedUser && (
                   <div className="bg-gray-800 p-4 rounded-lg mb-4">
                     <h3 className="font-bold mb-4 text-xl">{selectedUser.name}</h3>
-                    <div className="text-sm text-gray-400 mb-4">{selectedUser.username || selectedUser.id}</div>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="bg-gray-700 p-3 rounded">
                         <div className="text-gray-400 text-sm">Баланс</div>
@@ -1367,21 +1317,17 @@ const checkPromo = async () => {
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'stars', amount: 100 })} className="bg-green-600 p-2 rounded">+100⭐️</button>
-                      <button onClick={() => adminGiveReward(selectedUser.id, { type: 'stars', amount: 1000 })} className="bg-green-600 p-2 rounded">+1000⭐️</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'diamond', count: 5 })} className="bg-blue-600 p-2 rounded">+5💎</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'winter', count: 3 })} className="bg-cyan-600 p-2 rounded">+3☃️</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'elite', count: 2 })} className="bg-red-600 p-2 rounded">+2🎖</button>
+                      <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'money', count: 3 })} className="bg-green-500 p-2 rounded">+3💵</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'ice_gift' })} className="bg-cyan-500 p-2 rounded">🧊 Лёд</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'promo_dellko' })} className="bg-yellow-600 p-2 rounded">🎫 DELLKO</button>
                       <button onClick={() => adminGiveReward(selectedUser.id, { type: 'unlock_major' })} className="bg-purple-600 p-2 rounded">🔓 Мажор</button>
-                      <button onClick={() => adminGiveReward(selectedUser.id, { type: 'unlock_collector' })} className="bg-pink-600 p-2 rounded">🔓 Коллекционер</button>
-                      <button onClick={() => adminGiveReward(selectedUser.id, { type: 'item', item: { name: '💎 Алмаз PRO', emoji: '💎', type: 'collectible', uniqueId: Date.now() } })} className="bg-blue-500 p-2 rounded">💎 PRO</button>
-                      <button onClick={() => adminGiveReward(selectedUser.id, { type: 'item', item: { name: '🧤 Варежки', emoji: '🧤', type: 'item', sellPrice: 50, uniqueId: Date.now() } })} className="bg-purple-500 p-2 rounded">🧤</button>
                       <button onClick={() => setSelectedUser(null)} className="bg-gray-600 p-2 rounded col-span-4">Назад</button>
                     </div>
                   </div>
                 )}
-
                 {adminScreen === 'users' && !selectedUser && (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {allUsers.map(u => (
@@ -1398,7 +1344,6 @@ const checkPromo = async () => {
                     ))}
                   </div>
                 )}
-
                 {adminScreen === 'rewards' && (
                   <div>
                     <h3 className="text-lg mb-4">Выдать себе (админу):</h3>
@@ -1410,12 +1355,11 @@ const checkPromo = async () => {
                       <button onClick={() => adminGiveReward(user.id, { type: 'case', caseType: 'winter', count: 5 })} className="bg-cyan-500 p-3 rounded">+5 Зимних</button>
                       <button onClick={() => adminGiveReward(user.id, { type: 'promo_dellko' })} className="bg-yellow-600 p-3 rounded">🎫 DELLKO</button>
                       <button onClick={() => adminGiveReward(user.id, { type: 'item', item: { name: '🧤 Варежки', emoji: '🧤', type: 'item', sellPrice: 50, uniqueId: Date.now() } })} className="bg-purple-600 p-3 rounded">🧤 Варежки</button>
+                      <button onClick={() => adminGiveReward(user.id, { type: 'item', item: { name: '🚗 Автомобиль', emoji: '🚗', type: 'collectible', uniqueId: Date.now() } })} className="bg-red-600 p-3 rounded">🚗 Авто</button>
                       <button onClick={() => adminGiveReward(user.id, { type: 'unlock_major' })} className="bg-purple-800 p-3 rounded">🔓 Разблок Мажор</button>
-                      <button onClick={() => adminGiveReward(user.id, { type: 'unlock_collector' })} className="bg-pink-800 p-3 rounded">🔓 Разблок Коллекционер</button>
                     </div>
                   </div>
                 )}
-
                 {adminScreen === 'settings' && (
                   <div>
                     <h3 className="text-lg mb-4">Очистить только свой аккаунт</h3>
@@ -1436,7 +1380,6 @@ const checkPromo = async () => {
           </div>
         );
       }
-
       if (currentGame?.type === 'ice') {
         return (
           <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -1460,7 +1403,6 @@ const checkPromo = async () => {
                   </div>
                 )}
               </div>
-
               <div className="flex justify-center mb-6">
                 <div className="ice-circle relative">
                   {renderIceArenaField()}
@@ -1480,19 +1422,26 @@ const checkPromo = async () => {
                   )}
                 </div>
               </div>
-
               {/* Кнопка ставки - только если в лобби 2+ игрока и игрок еще не поставил */}
               {(gameStatus === 'waiting' || gameStatus === 'betting') && !hasBet ? (
                 <div className="glass rounded-xl p-4 mb-4 border border-cyan-500/30">
-                  <div className="flex gap-2 mb-4">
-                    <input type="number" min="25" value={myBet} onChange={(e) => setMyBet(Number(e.target.value))} className="flex-1 bg-gray-800 border border-cyan-600 rounded-lg p-3 text-center text-xl text-white" />
-                    <button onClick={() => setMyBet(p => p + 25)} className="bg-cyan-700 px-4 rounded-lg font-bold">+25</button>
-                    <button onClick={() => setMyBet(p => p + 100)} className="bg-cyan-700 px-4 rounded-lg font-bold">+100</button>
-                  </div>
-                  <button onClick={placeBet} disabled={balance < myBet} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 py-4 rounded-xl font-bold text-xl disabled:opacity-50 shadow-lg">
-                    Сделать ставку ({myBet}⭐️)
-                  </button>
-                  <p className="text-center text-sm text-cyan-300 mt-2">Минимальная ставка: 25⭐️</p>
+                  {iceLobby?.players && Object.keys(iceLobby.players).length < 2 ? (
+                    <div className="text-center text-yellow-400 py-4">
+                      ⏳ Ожидаем второго игрока...
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2 mb-4">
+                        <input type="number" min="25" value={myBet} onChange={(e) => setMyBet(Number(e.target.value))} className="flex-1 bg-gray-800 border border-cyan-600 rounded-lg p-3 text-center text-xl text-white" />
+                        <button onClick={() => setMyBet(p => p + 25)} className="bg-cyan-700 px-4 rounded-lg font-bold">+25</button>
+                        <button onClick={() => setMyBet(p => p + 100)} className="bg-cyan-700 px-4 rounded-lg font-bold">+100</button>
+                      </div>
+                      <button onClick={placeBet} disabled={balance < myBet} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 py-4 rounded-xl font-bold text-xl disabled:opacity-50 shadow-lg">
+                        Сделать ставку ({myBet}⭐️)
+                      </button>
+                      <p className="text-center text-sm text-cyan-300 mt-2">Минимальная ставка: 25⭐️</p>
+                    </>
+                  )}
                 </div>
               ) : hasBet ? (
                 <div className="text-center mb-4">
@@ -1510,7 +1459,6 @@ const checkPromo = async () => {
                   <p className="text-sm text-gray-400 mt-2">Ставку изменить нельзя после готовности</p>
                 </div>
               ) : null}
-
               {showPrizeChest && iceLobby?.winner?.id === user.id && iceLobby?.prizeClaimed?.[user.id] !== true && (
                 <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
                   <div className="glass rounded-2xl p-6 max-w-md w-full text-center border border-yellow-500/50">
@@ -1528,7 +1476,6 @@ const checkPromo = async () => {
                   </div>
                 </div>
               )}
-
               {showNewGamePrompt && (
                 <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4">
                   <div className="glass rounded-2xl p-6 text-center max-w-sm w-full">
@@ -1560,7 +1507,6 @@ const checkPromo = async () => {
                   </div>
                 </div>
               )}
-
               <div className="glass rounded-xl p-4 mb-4">
                 <h3 className="font-bold mb-2 text-cyan-300">Игроки ({iceLobby?.players ? Object.keys(iceLobby.players).length : 0}/15):</h3>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -1589,7 +1535,6 @@ const checkPromo = async () => {
                   </span>
                 </div>
               </div>
-
               <div className="glass rounded-xl p-4">
                 <h3 className="font-bold mb-3 text-center text-cyan-300">Возможные награды:</h3>
                 <div className="flex flex-wrap justify-center gap-3 text-2xl">
@@ -1603,7 +1548,6 @@ const checkPromo = async () => {
           </div>
         );
       }
-
       return (
         <div className="min-h-screen pb-24">
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
@@ -1612,7 +1556,6 @@ const checkPromo = async () => {
               {balance.toFixed(2)} ⭐️
             </button>
           </header>
-
           {paymentStatus && (
             <div className={`mx-4 mt-2 p-3 rounded-lg text-center text-sm ${paymentStatus.includes('✅') ? 'bg-green-500/20 border border-green-500' : 'bg-blue-500/20 border border-blue-500'}`}>
               {checkingPayment && <span className="animate-pulse">Проверка...</span>}
@@ -1622,7 +1565,6 @@ const checkPromo = async () => {
               )}
             </div>
           )}
-
           {showIceGiftModal && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full text-center border border-cyan-500/50">
@@ -1640,7 +1582,6 @@ const checkPromo = async () => {
               </div>
             </div>
           )}
-
           {showCollectibleModal && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full text-center">
@@ -1651,7 +1592,6 @@ const checkPromo = async () => {
               </div>
             </div>
           )}
-
           {showAdminLogin && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -1663,57 +1603,35 @@ const checkPromo = async () => {
               </div>
             </div>
           )}
-
           {showWithdrawModal && (
             <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
                 <h2 className="text-xl font-bold text-center mb-4">📊 Вывод призов</h2>
-                
-                {withdrawStep === 1 && (
-                  <>
-                    <input 
-                      type="number" 
-                      placeholder="Количество звезд" 
-                      value={withdrawAmount} 
-                      onChange={(e) => setWithdrawAmount(e.target.value)} 
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 mb-4 text-center" 
-                    />
-                    <button 
-                      onClick={() => setWithdrawStep(2)}
-                      disabled={!withdrawAmount || Number(withdrawAmount) <= 0}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold disabled:opacity-50"
-                    >
-                      Продолжить
-                    </button>
-                  </>
-                )}
-                
-                {withdrawStep === 2 && (
-                  <>
-                    <p className="text-center text-gray-300 mb-4">Выберите способ вывода ({withdrawAmount}⭐️)</p>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <button 
-                        onClick={() => confirmWithdraw('stars')} 
-                        className="bg-yellow-600 hover:bg-yellow-500 py-3 rounded-xl font-bold"
-                      >
-                        В звездах
-                      </button>
-                      <button 
-                        onClick={() => confirmWithdraw('gifts')} 
-                        className="bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-bold"
-                      >
-                        В подарках
-                      </button>
-                    </div>
-                    <button onClick={() => setWithdrawStep(1)} className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-xl">Назад</button>
-                  </>
-                )}
-                
-                <button onClick={() => setShowWithdrawModal(false)} className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-xl mt-2">Отмена</button>
+                <input 
+                  type="number" 
+                  placeholder="Количество звезд" 
+                  value={withdrawAmount} 
+                  onChange={(e) => setWithdrawAmount(e.target.value)} 
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 mb-4 text-center" 
+                />
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button 
+                    onClick={() => confirmWithdraw('stars')} 
+                    className="bg-yellow-600 hover:bg-yellow-500 py-3 rounded-xl font-bold"
+                  >
+                    В звездах
+                  </button>
+                  <button 
+                    onClick={() => confirmWithdraw('gifts')} 
+                    className="bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-bold"
+                  >
+                    В подарках
+                  </button>
+                </div>
+                <button onClick={() => setShowWithdrawModal(false)} className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-xl">Отмена</button>
               </div>
             </div>
           )}
-
           <main className="p-4 max-w-md mx-auto">
             {currentScreen === 'cases' && (
               <div>
@@ -1748,7 +1666,7 @@ const checkPromo = async () => {
                     .filter(c => c.locked)
                     .map(c => (
                     <div key={c.id} className="glass rounded-xl p-4 relative opacity-50">
-                      <div className="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center z-10">
+                      <div className="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center">
                         <span className="text-2xl">🔒</span>
                       </div>
                       <div className={`w-16 h-16 mx-auto rounded-lg bg-gradient-to-br ${c.color} flex items-center justify-center text-3xl mb-2 shadow-lg`}>{c.emoji}</div>
@@ -1760,7 +1678,6 @@ const checkPromo = async () => {
                 </div>
               </div>
             )}
-
             {currentScreen === 'games' && (
               <div>
                 <h2 className="text-2xl font-bold mb-4 text-center">🎮 Игры</h2>
@@ -1779,7 +1696,6 @@ const checkPromo = async () => {
                 </div>
               </div>
             )}
-
             {currentScreen === 'tasks' && (
               <div>
                 <h2 className="text-2xl font-bold mb-4 text-center">📋 Мои Задания</h2>
@@ -1796,7 +1712,6 @@ const checkPromo = async () => {
                       {tasks.subscribe?.completed ? 'Выполнено' : 'Подписаться'}
                     </button>
                   </div>
-
                   <div className={`glass rounded-xl p-4 ${tasks.deposit?.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -1809,7 +1724,6 @@ const checkPromo = async () => {
                       {tasks.deposit?.completed ? 'Выполнено' : 'Пополнить'}
                     </button>
                   </div>
-
                   <div className={`glass rounded-xl p-4 ${tasks.depositMajor?.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -1822,7 +1736,6 @@ const checkPromo = async () => {
                       {tasks.depositMajor?.completed ? 'Выполнено' : 'Пополнить'}
                     </button>
                   </div>
-
                   <div className={`glass rounded-xl p-4 ${tasks.invite?.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -1842,7 +1755,6 @@ const checkPromo = async () => {
                 </div>
               </div>
             )}
-
             {currentScreen === 'profile' && (
               <div>
                 <div className="glass rounded-xl p-4 mb-4 flex justify-between items-center">
@@ -1858,22 +1770,19 @@ const checkPromo = async () => {
                   <h3 className="text-xl font-bold">{user?.name}</h3>
                   {user?.username && <p className="text-gray-400">{user.username}</p>}
                 </div>
-
                 {/* Кнопки пополнения */}
                 <div className="flex gap-2 mb-4">
                   <button onClick={() => setShowTopUp(true)} className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition">💎 Пополнить TON</button>
                 </div>
-
-                {/* Кнопка вывода призов - ИЗМЕНЕНО: требуется 350⭐️ */}
+                {/* Кнопка вывода призов */}
                 <div className="mb-4">
                   <button 
-                    onClick={handleWithdraw} 
-                    className={`w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2`}
+                    onClick={() => setShowWithdrawModal(true)} 
+                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2"
                   >
-                    {totalDeposits >= 350 ? '🏆 Вывести призы 🏆' : '📊 Вывести призы 📊'}
+                    {totalDeposits >= 150 ? '🏆 Вывести призы 🏆' : '📊 Вывести призы 📊'}
                   </button>
                 </div>
-
                 <div className="glass rounded-xl p-4 mb-4">
                   <h3 className="font-bold mb-2">🎁 Промокод</h3>
                   <div className="flex gap-2">
@@ -1883,7 +1792,6 @@ const checkPromo = async () => {
                   {promoError && <p className="text-red-400 text-sm mt-2 text-center">{promoError}</p>}
                   {promoSuccess && <p className="text-green-400 text-sm mt-2 text-center">{promoSuccess}</p>}
                 </div>
-
                 <div className="glass rounded-xl p-4">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-bold">🎒 Инвентарь</h3>
@@ -1907,7 +1815,6 @@ const checkPromo = async () => {
               </div>
             )}
           </main>
-
           {selectedCase && (
             <div className="fullscreen-modal flex items-center justify-center p-4">
               <div className="w-full max-w-lg">
@@ -1938,7 +1845,6 @@ const checkPromo = async () => {
                     ) : <div className="w-full text-center text-gray-400 text-xl">Нажмите кнопку для открытия</div>}
                   </div>
                 </div>
-
                 <div className="glass rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
                   <p className="font-bold mb-2 text-center text-lg">Возможные награды:</p>
                   <div className="space-y-1 text-sm">
@@ -1950,7 +1856,6 @@ const checkPromo = async () => {
                     ))}
                   </div>
                 </div>
-
                 {spinResult ? (
                   <div className="text-center">
                     <p className="text-2xl font-bold mb-2">Выпало: {spinResult.name}!</p>
@@ -1966,7 +1871,6 @@ const checkPromo = async () => {
               </div>
             </div>
           )}
-
           {showTopUp && (
             <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -1997,7 +1901,6 @@ const checkPromo = async () => {
               </div>
             </div>
           )}
-
           <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
             <div className="max-w-md mx-auto flex justify-around">
               {['tasks', 'cases', 'games', 'profile'].map(screen => (
@@ -2011,10 +1914,10 @@ const checkPromo = async () => {
         </div>
       );
     }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
+
 
 
