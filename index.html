@@ -15,14 +15,9 @@
       darkMode: 'class',
       theme: {
         extend: {
-          colors: {
-            primary: '#6366f1',
-            secondary: '#8b5cf6',
-            accent: '#f59e0b',
-            ice: '#00d2ff',
-          },
-        },
-      },
+          colors: { primary: '#6366f1', secondary: '#8b5cf6', accent: '#f59e0b', ice: '#00d2ff' }
+        }
+      }
     };
   </script>
 
@@ -36,81 +31,18 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    @keyframes spin-slow {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50%); }
-    }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    .roulette-container {
-      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    }
-    .glass {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .line-through {
-      text-decoration: line-through;
-      opacity: 0.5;
-    }
-    .fullscreen-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.95);
-      z-index: 100;
-      overflow-y: auto;
-    }
-    .ice-circle {
-      width: 320px;
-      height: 320px;
-      border-radius: 50%;
-      border: 4px solid rgba(0,210,255,0.5);
-      position: relative;
-      overflow: hidden;
-      background: radial-gradient(
-        circle,
-        rgba(0,210,255, 0%),
-        rgba(0,128,255,0.2) 160px,
-        rgba(0,128,255,0.4) 100%
-      );
-      box-shadow: 0 0 30px rgba(0,210,255,0.3);
-    }
-    .ice-ball {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: radial-gradient(circle at 30% 30%, #fff, #00d2ff);
-      border-radius: 50%;
-      box-shadow: 0 0 20px rgba(0,210,255,0.8);
-      z-index: 10;
-      transform: translate(-50%, -50%);
-      border: 2px solid rgba(255,255,255,0.5);
-      transition: left 0.025s linear, top 0.025s linear;
-    }
-    .player-avatar {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2px solid white;
-      overflow: hidden;
-      transform: translate(-50%, -50%);
-      z-index: 5;
-    }
-    .mystery-box {
-      animation: float 2s ease-in-out infinite;
-    }
-    .case-cardboard {
-      background: linear-gradient(135deg, #8B4513 0%, #D2691E 50%, #8B4513 100%);
-      border: 3px solid #A0522D;
-    }
-    .case-collector {
-      background: linear-gradient(135deg, #DC143C 0%, #FF1493 50%, #8B008B 100%);
-      border: 3px solid #FFD700;
-    }
+    @keyframes spin-slow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .roulette-container { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+    .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+    .line-through { text-decoration: line-through; opacity: 0.5; }
+    .fullscreen-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; overflow-y: auto; }
+    .ice-circle { width: 320px; height: 320px; border-radius: 50%; border: 4px solid rgba(0,210,255,0.5); position: relative; overflow: hidden; background: radial-gradient(circle, rgba(0,210,255,0%), rgba(0,128,255,0.2) 160px, rgba(0,128,255,0.4) 100%); box-shadow: 0 0 30px rgba(0,210,255,0.3); }
+    .ice-ball { position: absolute; width: 40px; height: 40px; background: radial-gradient(circle at 30% 30%, #fff, #00d2ff); border-radius: 50%; box-shadow: 0 0 20px rgba(0,210,255,0.8); z-index: 10; transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.5); transition: left 0.025s linear, top 0.025s linear; }
+    .player-avatar { position: absolute; width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; overflow: hidden; transform: translate(-50%,-50%); z-index: 5; }
+    .mystery-box { animation: float 2s ease-in-out infinite; }
+    .case-cardboard { background: linear-gradient(135deg, #8B4513 0%, #D2691E 50%, #8B4513 100%); border: 3px solid #A0522D; }
+    .case-collector { background: linear-gradient(135deg, #DC143C 0%, #FF1493 50%, #8B008B 100%); border: 3px solid #FFD700; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 min-h-screen text-white overflow-x-hidden">
@@ -139,7 +71,6 @@
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     const BOT_TOKEN = '8325421899:AAHRdmMYdjJMXmAVIynDsQtpUNsSeKkaOis';
 
-    // ====== ИЗМЕНЕНО: Добавлен кейс Картон и исправлены шансы Коллекционера ======
     const CASE_REWARDS = {
       cardboard: [
         { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
@@ -210,7 +141,6 @@
         { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
         { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
       ],
-      // ====== ИЗМЕНЕНО: Разные отображаемые и реальные шансы ======
       collector: [
         { id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
         { id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
@@ -236,7 +166,6 @@
       { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
     ];
 
-    // ====== ИЗМЕНЕНО: Добавлен кейс Картон, Коллекционер заблокирован ======
     const INITIAL_CASES = {
       cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: true, freeCount: 0 },
       coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
@@ -657,7 +586,6 @@
         alert('Награда выдана!');
       };
 
-      // ====== ИЗМЕНЕНО: Минимум 3 игрока, сброс таймера при новом игроке, лимит 15 игроков ======
       const joinIceLobby = async (lobbyId) => {
         const lobbyRef = db.ref('iceLobbies/' + lobbyId);
         const snap = await lobbyRef.once('value');
@@ -678,7 +606,6 @@
               countdownStarted: false
             });
           }
-          // Сброс таймера если новый игрок заходит во время отсчета
           if (data.status === 'betting') {
             await lobbyRef.update({
               status: 'waiting',
@@ -706,13 +633,11 @@
         const snap = await lobbyRef.once('value');
         const data = snap.val() || {};
 
-        // Проверка лимита 15 игроков
         if (data.players && Object.keys(data.players).length >= 15) {
           alert('Лобби заполнено (15/15)!');
           return;
         }
 
-        // Сброс если действие во время отсчета
         if (data.status === 'betting') {
           await lobbyRef.update({
             status: 'waiting',
@@ -858,9 +783,8 @@
         const playersCount = Object.keys(data.players || {}).length;
         const readyPlayersCount = Object.keys(data.readyPlayers || {}).length;
 
-        // ====== ИЗМЕНЕНО: Минимум 3 игрока для старта ======
         if (
-          playersCount >= 3 &&
+          playersCount >= 2 &&
           readyPlayersCount === playersCount &&
           !data.countdownStarted
         ) {
@@ -916,36 +840,29 @@
         const c = cases[caseType];
         if (!c) return 0;
         if (c.freeCount > 0) return 0;
-        if (c.freeSpins > 0) return 0; // Бесплатный прокрут
+        if (c.freeSpins > 0) return 0;
         if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
         return c.price;
       };
 
-      // ====== ИЗМЕНЕНО: Исправлен баг возврата стоимости кейса ======
       const openCase = async (caseType) => {
         const price = getCasePrice(caseType);
         const isFreeCase = cases[caseType]?.freeCount > 0;
         const isFreeSpin = cases[caseType]?.freeSpins > 0;
 
-        // Проверяем баланс только если кейс платный
         if (!isFreeCase && !isFreeSpin && price > 0 && balance < price) {
           alert('Недостаточно звезд!');
           return;
         }
 
-        // Сохраняем текущий баланс ДО списания
         const balanceBefore = balance;
-        
-        // Вычисляем новый баланс после покупки (ТОЛЬКО списание, без возврата)
         let newBalanceAfterPurchase = balanceBefore;
         if (!isFreeCase && !isFreeSpin && price > 0) {
           newBalanceAfterPurchase = balanceBefore - price;
-          // Сразу обновляем UI и Firebase - списываем звезды за кейс
           setBalance(newBalanceAfterPurchase);
           await db.ref('users/' + user.id + '/balance').set(newBalanceAfterPurchase);
         }
 
-        // Уменьшаем счетчик бесплатных кейсов или прокрутов
         if (isFreeCase) {
           const newFreeCount = (cases[caseType].freeCount || 0) - 1;
           setCases(prev => ({
@@ -968,17 +885,13 @@
           await db.ref(`users/${user.id}/cases/${caseType}/freeSpins`).set(newFreeSpins);
         }
 
-        // Запускаем анимацию
         setIsSpinning(true);
         setSelectedCase({ ...cases[caseType], id: caseType });
 
-        // Через 3 секунды показываем результат
         setTimeout(async () => {
           const items = CASE_REWARDS[caseType];
           const rand = Math.random() * 100;
           let cum = 0, won = items[0];
-          
-          // Используем realChance для определения выигрыша
           for (const item of items) {
             cum += item.realChance;
             if (rand <= cum) {
@@ -986,19 +899,14 @@
               break;
             }
           }
-          
           setSpinResult(won);
           setIsSpinning(false);
 
-          // Обрабатываем выигрыш
           if (won.type === 'stars') {
-            // Если выпали звезды - добавляем к текущему балансу (который уже без стоимости кейса)
-            // ВАЖНО: стоимость кейса НЕ возвращается, только награда добавляется
             const finalBalance = newBalanceAfterPurchase + won.value;
             setBalance(finalBalance);
             await db.ref(`users/${user.id}/balance`).set(finalBalance);
           } else {
-            // Если выпал предмет - добавляем в инвентарь, баланс остается как после покупки
             await addToInventory(won);
           }
         }, 3000);
@@ -1275,7 +1183,6 @@
                 });
               }
 
-              // ====== ИЗМЕНЕНО: Разблокировка Коллекционера при депозите 350 ======
               if (
                 !tasks.depositMajor.completed &&
                 newTotalDeposits >= 350
@@ -1376,7 +1283,6 @@
                       });
                     }
 
-                    // ====== ИЗМЕНЕНО: Разблокировка Коллекционера при покупке звезд ======
                     if (
                       !tasks.depositMajor.completed &&
                       newTotalDeposits >= 350
@@ -1428,7 +1334,6 @@
         }
       };
 
-      // ====== ИЗМЕНЕНО: Добавлен бесплатный прокрут за подписку ======
       const completeTask = async (taskId) => {
         if (taskId === 'subscribe') {
           window.open('https://t.me/stepbystepdelision', '_blank');
@@ -2081,9 +1986,9 @@
               !hasBet ? (
                 <div className="glass rounded-xl p-4 mb-4 border border-cyan-500/30">
                   {iceLobby?.players &&
-                  Object.keys(iceLobby.players).length < 3 ? (
+                  Object.keys(iceLobby.players).length < 2 ? (
                     <div className="text-center text-yellow-400 py-4">
-                      ⏳ Ожидаем минимум 3 игроков (сейчас {Object.keys(iceLobby.players).length})...
+                      ⏳ Ожидаем второго игрока (сейчас {Object.keys(iceLobby.players).length})...
                     </div>
                   ) : (
                     <>
