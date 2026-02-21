@@ -71,6 +71,9 @@
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     const BOT_TOKEN = 'REMOVED_BOT_TOKEN';
 
+    // ====== НАБОР НАГРАД ДЛЯ ВСЕХ КЕЙСОВ ======
+    // Добавлены: cardboard (Картон) с реальными шансами
+    // Изменен: collector (Коллекционер) с отдельными displayChance и realChance
     const CASE_REWARDS = {
       cardboard: [
         { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
@@ -141,6 +144,8 @@
         { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
         { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
       ],
+      // ====== КЕЙС КОЛЛЕКЦИОНЕР: ОТДЕЛЬНЫЕ ОТОБРАЖАЕМЫЕ И РЕАЛЬНЫЕ ШАНСЫ ======
+      // 🎩 Top hat и 🦅Rare bird имеют реальный шанс 0% (никогда не выпадают)
       collector: [
         { id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
         { id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
@@ -166,6 +171,7 @@
       { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
     ];
 
+    // ====== ИЗМЕНЕНО: ДОБАВЛЕН КЕЙС КАРТОН, КОЛЛЕКЦИОНЕР ЗАБЛОКИРОВАН ======
     const INITIAL_CASES = {
       cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: true, freeCount: 0 },
       coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
@@ -248,6 +254,7 @@
       const [showWithdrawModal, setShowWithdrawModal] = useState(false);
       const [totalDeposits, setTotalDeposits] = useState(0);
 
+      // ====== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ======
       useEffect(() => {
         const initApp = async () => {
           let userId = null;
@@ -343,6 +350,7 @@
         initApp();
       }, []);
 
+      // ====== ОНЛАЙН СТАТУС ======
       useEffect(() => {
         if (!user?.id) return;
 
@@ -361,6 +369,7 @@
         };
       }, [user?.id]);
 
+      // ====== АВТОСОХРАНЕНИЕ ======
       useEffect(() => {
         if (!user?.id || isLoading) return;
 
@@ -397,6 +406,7 @@
         totalDeposits
       ]);
 
+      // ====== СОХРАНЕНИЕ ПРИ ЗАКРЫТИИ ======
       useEffect(() => {
         const handleBeforeUnload = async () => {
           if (!user?.id) return;
@@ -428,6 +438,7 @@
         totalDeposits
       ]);
 
+      // ====== ЛЕДЯНОЙ КАТОК: ПРОСЛУШКА ЛОББИ ======
       useEffect(() => {
         if (!(currentGame?.type === 'ice' && currentGame.lobbyId && user?.id)) {
           return;
@@ -498,6 +509,7 @@
         );
       }
 
+      // ====== АДМИН ПАНЕЛЬ ======
       const handleTitleClick = () => {
         const newAttempts = adminAttempts + 1;
         setAdminAttempts(newAttempts);
@@ -586,6 +598,8 @@
         alert('Награда выдана!');
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: ВХОД В ЛОББИ ======
+      // Сброс таймера если новый игрок заходит во время отсчета
       const joinIceLobby = async (lobbyId) => {
         const lobbyRef = db.ref('iceLobbies/' + lobbyId);
         const snap = await lobbyRef.once('value');
@@ -620,6 +634,7 @@
         setCurrentGame({ type: 'ice', lobbyId });
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: СТАВКА ======
       const placeBet = async () => {
         if (balance < myBet) {
           alert('Недостаточно звезд!');
@@ -633,11 +648,13 @@
         const snap = await lobbyRef.once('value');
         const data = snap.val() || {};
 
+        // Проверка лимита 15 игроков
         if (data.players && Object.keys(data.players).length >= 15) {
           alert('Лобби заполнено (15/15)!');
           return;
         }
 
+        // Сброс если действие во время отсчета
         if (data.status === 'betting') {
           await lobbyRef.update({
             status: 'waiting',
@@ -665,6 +682,7 @@
         setHasBet(true);
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: ЗАПУСК ИГРЫ ======
       const startIceGame = async (lobbyRef) => {
         await lobbyRef.update({ status: 'playing' });
         let x = 50,
@@ -705,6 +723,8 @@
         }, 25);
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: ФИНИШ ИГРЫ ======
+      // Победитель получает 45% от общей ставки
       const finishIceGame = async (lobbyRef, finalX, finalY) => {
         const snap = await lobbyRef.once('value');
         const data = snap.val() || {};
@@ -760,13 +780,15 @@
         });
 
         if (winner.id === user.id) {
-          const winAmount = Math.floor(totalBet * 0.45);
+          const winAmount = Math.floor(totalBet * 0.45); // 45% от общей ставки
           const newBalance = balance + winAmount;
           setBalance(newBalance);
           await db.ref('users/' + user.id + '/balance').set(newBalance);
         }
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: ГОТОВНОСТЬ ======
+      // Минимум 2 игрока для старта игры
       const toggleReady = async () => {
         if (!hasBet) return;
         const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
@@ -798,6 +820,7 @@
         }
       };
 
+      // ====== ЛЕДЯНОЙ КАТОК: ОТКРЫТЬ СУНДУК ======
       const openChest = async () => {
         if (openedChestCount >= 1) return;
         if (!currentGame?.lobbyId || !chestPrizes[0]) return;
@@ -836,6 +859,9 @@
         }, 1500);
       };
 
+      // ====== ОТКРЫТИЕ КЕЙСА: ИСПРАВЛЕН БАГ ВОЗВРАТА СТОИМОСТИ ======
+      // Формула: новый баланс = старый баланс − стоимость кейса + выпавшие ⭐
+      // Стоимость кейса НИКОГДА не возвращается автоматически
       const getCasePrice = (caseType) => {
         const c = cases[caseType];
         if (!c) return 0;
@@ -850,19 +876,25 @@
         const isFreeCase = cases[caseType]?.freeCount > 0;
         const isFreeSpin = cases[caseType]?.freeSpins > 0;
 
+        // Проверяем баланс только если кейс платный
         if (!isFreeCase && !isFreeSpin && price > 0 && balance < price) {
           alert('Недостаточно звезд!');
           return;
         }
 
+        // Сохраняем текущий баланс ДО списания
         const balanceBefore = balance;
+        
+        // Вычисляем новый баланс после покупки (ТОЛЬКО списание, без возврата)
         let newBalanceAfterPurchase = balanceBefore;
         if (!isFreeCase && !isFreeSpin && price > 0) {
           newBalanceAfterPurchase = balanceBefore - price;
+          // Сразу обновляем UI и Firebase - списываем звезды за кейс
           setBalance(newBalanceAfterPurchase);
           await db.ref('users/' + user.id + '/balance').set(newBalanceAfterPurchase);
         }
 
+        // Уменьшаем счетчик бесплатных кейсов или прокрутов
         if (isFreeCase) {
           const newFreeCount = (cases[caseType].freeCount || 0) - 1;
           setCases(prev => ({
@@ -885,13 +917,17 @@
           await db.ref(`users/${user.id}/cases/${caseType}/freeSpins`).set(newFreeSpins);
         }
 
+        // Запускаем анимацию
         setIsSpinning(true);
         setSelectedCase({ ...cases[caseType], id: caseType });
 
+        // Через 3 секунды показываем результат
         setTimeout(async () => {
           const items = CASE_REWARDS[caseType];
           const rand = Math.random() * 100;
           let cum = 0, won = items[0];
+          
+          // Используем realChance для определения выигрыша
           for (const item of items) {
             cum += item.realChance;
             if (rand <= cum) {
@@ -899,19 +935,25 @@
               break;
             }
           }
+          
           setSpinResult(won);
           setIsSpinning(false);
 
+          // Обрабатываем выигрыш
           if (won.type === 'stars') {
+            // Если выпали звезды - добавляем к текущему балансу (который уже без стоимости кейса)
+            // ВАЖНО: стоимость кейса НЕ возвращается, только награда добавляется
             const finalBalance = newBalanceAfterPurchase + won.value;
             setBalance(finalBalance);
             await db.ref(`users/${user.id}/balance`).set(finalBalance);
           } else {
+            // Если выпал предмет - добавляем в инвентарь, баланс остается как после покупки
             await addToInventory(won);
           }
         }, 3000);
       };
 
+      // ====== ИНВЕНТАРЬ ======
       const addToInventory = async (item) => {
         if (inventory.length >= inventorySlots) {
           alert('Инвентарь полон!');
@@ -927,6 +969,7 @@
         await db.ref(`users/${user.id}/inventory`).set(newInventory);
       };
 
+      // ====== ПРОДАЖА ПРЕДМЕТА ======
       const sellItem = async (item) => {
         if (item.type === 'ice_gift') {
           setSelectedIceGift(item);
@@ -980,6 +1023,7 @@
         }
       };
 
+      // ====== ЛЕДЯНОЙ ПОДАРОК ======
       const sellIceGift = async () => {
         if (!selectedIceGift) return;
         const newBalance = balance + 25;
@@ -1002,6 +1046,7 @@
         setSelectedIceGift(null);
       };
 
+      // ====== РАЗБЛОКИРОВКА СЛОТА ======
       const unlockSlot = async () => {
         if (balance < 50) {
           alert('Недостаточно звезд!');
@@ -1018,6 +1063,7 @@
         });
       };
 
+      // ====== ПРОМОКОДЫ ======
       const checkPromo = async () => {
         const code = promoCode.trim().toUpperCase();
         setPromoError('');
@@ -1077,6 +1123,7 @@
         }
       };
 
+      // ====== ПОПОЛНЕНИЕ ЧЕРЕЗ TON ======
       const generatePaymentId = () => {
         return (
           'PAY_' +
@@ -1112,6 +1159,7 @@
         setTimeout(() => checkPayment(paymentId), 10000);
       };
 
+      // ====== ПРОВЕРКА ПЛАТЕЖА ======
       const checkPayment = async (paymentId) => {
         const payment = pendingPayments.find(p => p.id === paymentId);
         if (!payment || payment.status === 'completed') return;
@@ -1160,6 +1208,7 @@
                 totalDeposits: newTotalDeposits
               });
 
+              // ====== РАЗБЛОКИРОВКА ПРИ ДЕПОЗИТЕ 100 ЗВЕЗД ======
               if (
                 !tasks.deposit.completed &&
                 newTotalDeposits >= 100
@@ -1183,6 +1232,7 @@
                 });
               }
 
+              // ====== РАЗБЛОКИРОВКА КОЛЛЕКЦИОНЕРА ПРИ ДЕПОЗИТЕ 350 ЗВЕЗД ======
               if (
                 !tasks.depositMajor.completed &&
                 newTotalDeposits >= 350
@@ -1224,6 +1274,7 @@
         }
       };
 
+      // ====== ПОКУПКА ЗВЕЗД ЧЕРЕЗ TELEGRAM ======
       const buyStars = async (pkg) => {
         try {
           const response = await fetch(
@@ -1259,6 +1310,7 @@
                       totalDeposits: newTotalDeposits
                     });
 
+                    // Разблокировка при 100 звездах
                     if (
                       !tasks.deposit.completed &&
                       newTotalDeposits >= 100
@@ -1283,6 +1335,7 @@
                       });
                     }
 
+                    // Разблокировка Коллекционера при 350 звездах
                     if (
                       !tasks.depositMajor.completed &&
                       newTotalDeposits >= 350
@@ -1334,6 +1387,8 @@
         }
       };
 
+      // ====== ВЫПОЛНЕНИЕ ЗАДАНИЙ ======
+      // Задание "Подпишись на канал" дает 1 бесплатный прокрут Элиты
       const completeTask = async (taskId) => {
         if (taskId === 'subscribe') {
           window.open('https://t.me/stepbystepdelision', '_blank');
@@ -1376,6 +1431,8 @@
         }
       };
 
+      // ====== ВЫВОД ПРИЗОВ ======
+      // Кнопка заблокирована пока не выполнено задание 350 звезд
       const handleWithdraw = () => {
         if (totalDeposits < 350) {
           setShowWithdrawModal(false);
@@ -1398,6 +1455,7 @@
         setWithdrawAmount('');
       };
 
+      // ====== РЕНДЕР ПОЛЯ ЛЕДЯНОГО КАТКА ======
       const renderIceArenaField = () => {
         if (!iceLobby?.players) return null;
         const players = Object.entries(iceLobby.players);
@@ -1481,6 +1539,7 @@
         });
       };
 
+      // ====== АДМИН ПАНЕЛЬ ======
       if (isAdmin) {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -1911,6 +1970,7 @@
         );
       }
 
+      // ====== ЛЕДЯНОЙ КАТОК: ИНТЕРФЕЙС ======
       if (currentGame?.type === 'ice') {
         return (
           <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -1988,7 +2048,7 @@
                   {iceLobby?.players &&
                   Object.keys(iceLobby.players).length < 2 ? (
                     <div className="text-center text-yellow-400 py-4">
-                      ⏳ Ожидаем второго игрока (сейчас {Object.keys(iceLobby.players).length})...
+                      ⏳ Ожидаем минимум 2 игроков (сейчас {Object.keys(iceLobby.players).length})...
                     </div>
                   ) : (
                     <>
@@ -2223,6 +2283,7 @@
         );
       }
 
+      // ====== ГЛАВНЫЙ ИНТЕРФЕЙС ======
       return (
         <div className="min-h-screen pb-24">
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
@@ -2883,222 +2944,222 @@
                 </div>
               </div>
             )}
-          </main>
 
-          {selectedCase && (
-            <div className="fullscreen-modal flex items-center justify-center p-4">
-              <div className="w-full max-w-lg">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-3xl font-bold">
-                    {selectedCase.emoji} {selectedCase.name}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setSelectedCase(null);
-                      setSpinResult(null);
-                    }}
-                    className="text-3xl hover:text-red-400 transition"
-                  >
-                    &times;
-                  </button>
-                </div>
-
-                <div className="relative mb-8">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 z-10">
-                    <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[20px] border-t-red-500"></div>
-                  </div>
-                  <div className="roulette-container bg-gray-800 rounded-xl h-48 overflow-hidden relative border-2 border-white/20 flex items-center">
-                    {isSpinning ? (
-                      <div className="flex gap-6 px-6 animate-[spin-slow_0.3s_linear_infinite]">
-                        {Array.from({ length: 30 }, (_, i) => (
-                          <div
-                            key={i}
-                            className="w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center text-5xl shadow-lg"
-                          >
-                            {
-                              CASE_REWARDS[selectedCase.id][
-                                i %
-                                  CASE_REWARDS[selectedCase.id]
-                                    .length
-                              ].emoji
-                            }
-                          </div>
-                        ))}
-                      </div>
-                    ) : spinResult ? (
-                      <div className="w-full flex justify-center">
-                        <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-6xl animate-bounce shadow-2xl">
-                          {spinResult.emoji}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full text-center text-gray-400 text-xl">
-                        Нажмите кнопку для открытия
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="glass rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
-                  <p className="font-bold mb-2 text-center text-lg">
-                    Возможные награды:
-                  </p>
-                  <div className="space-y-1 text-sm">
-                    {CASE_REWARDS[selectedCase.id].map(
-                      (reward, idx) => (
-                        <div
-                          key={idx}
-                          className="flex justify-between py-1 border-b border-white/10 last:border-0"
-                        >
-                          <span className="flex items-center gap-2">
-                            {reward.emoji} {reward.name}
-                          </span>
-                          <span className="text-yellow-400 font-bold">
-                            {reward.displayChance}
-                          </span>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {spinResult ? (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold mb-2">
-                      Выпало: {spinResult.name}!
-                    </p>
-                    {spinResult.type === 'collectible' && (
-                      <p className="text-sm text-yellow-400 mb-4">
-                        ⭐️ Коллекционный предмет!
-                      </p>
-                    )}
-                    <button
-                      onClick={() => setSpinResult(null)}
-                      className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-xl mb-2 transition"
-                    >
-                      Забрать и открыть ещё
-                    </button>
+            {selectedCase && (
+              <div className="fullscreen-modal flex items-center justify-center p-4">
+                <div className="w-full max-w-lg">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-3xl font-bold">
+                      {selectedCase.emoji} {selectedCase.name}
+                    </h3>
                     <button
                       onClick={() => {
                         setSelectedCase(null);
                         setSpinResult(null);
                       }}
-                      className="w-full bg-gray-600 hover:bg-gray-500 py-3 rounded-xl font-bold transition"
+                      className="text-3xl hover:text-red-400 transition"
                     >
-                      Вернуться к кейсам
+                      &times;
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => openCase(selectedCase.id)}
-                    disabled={isSpinning}
-                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 py-4 rounded-xl font-bold text-xl disabled:opacity-50 shadow-lg transition"
-                  >
-                    {isSpinning
-                      ? 'Крутим...'
-                      : `Открыть за ${
-                          getCasePrice(selectedCase.id) === 0
-                            ? 'Бесплатно'
-                            : getCasePrice(selectedCase.id) + ' ⭐️'
-                        }`}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
-          {showTopUp && (
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-              <div className="glass rounded-2xl p-6 max-w-sm w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">💳 Пополнение</h3>
-                  <button
-                    onClick={() => setShowTopUp(false)}
-                    className="text-2xl hover:text-red-400 transition"
-                  >
-                    &times;
-                  </button>
-                </div>
+                  <div className="relative mb-8">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 z-10">
+                      <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[20px] border-t-red-500"></div>
+                    </div>
+                    <div className="roulette-container bg-gray-800 rounded-xl h-48 overflow-hidden relative border-2 border-white/20 flex items-center">
+                      {isSpinning ? (
+                        <div className="flex gap-6 px-6 animate-[spin-slow_0.3s_linear_infinite]">
+                          {Array.from({ length: 30 }, (_, i) => (
+                            <div
+                              key={i}
+                              className="w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center text-5xl shadow-lg"
+                            >
+                              {
+                                CASE_REWARDS[selectedCase.id][
+                                  i %
+                                    CASE_REWARDS[selectedCase.id]
+                                      .length
+                                ].emoji
+                              }
+                            </div>
+                          ))}
+                        </div>
+                      ) : spinResult ? (
+                        <div className="w-full flex justify-center">
+                          <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-6xl animate-bounce shadow-2xl">
+                            {spinResult.emoji}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full text-center text-gray-400 text-xl">
+                          Нажмите кнопку для открытия
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="space-y-3 mb-4">
-                  <p className="text-sm text-gray-400 text-center">
-                    ⭐️ Telegram Stars
-                  </p>
-                  {STARS_PACKAGES.map(pkg => (
+                  <div className="glass rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
+                    <p className="font-bold mb-2 text-center text-lg">
+                      Возможные награды:
+                    </p>
+                    <div className="space-y-1 text-sm">
+                      {CASE_REWARDS[selectedCase.id].map(
+                        (reward, idx) => (
+                          <div
+                            key={idx}
+                            className="flex justify-between py-1 border-b border-white/10 last:border-0"
+                          >
+                            <span className="flex items-center gap-2">
+                              {reward.emoji} {reward.name}
+                            </span>
+                            <span className="text-yellow-400 font-bold">
+                              {reward.displayChance}
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {spinResult ? (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold mb-2">
+                        Выпало: {spinResult.name}!
+                      </p>
+                      {spinResult.type === 'collectible' && (
+                        <p className="text-sm text-yellow-400 mb-4">
+                          ⭐️ Коллекционный предмет!
+                        </p>
+                      )}
+                      <button
+                        onClick={() => setSpinResult(null)}
+                        className="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-xl mb-2 transition"
+                      >
+                        Забрать и открыть ещё
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCase(null);
+                          setSpinResult(null);
+                        }}
+                        className="w-full bg-gray-600 hover:bg-gray-500 py-3 rounded-xl font-bold transition"
+                      >
+                        Вернуться к кейсам
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      key={pkg.stars}
-                      onClick={() => buyStars(pkg)}
-                      className="w-full glass p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10"
+                      onClick={() => openCase(selectedCase.id)}
+                      disabled={isSpinning}
+                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 py-4 rounded-xl font-bold text-xl disabled:opacity-50 shadow-lg transition"
                     >
-                      <span className="font-bold text-yellow-400">
-                        +{pkg.stars} ⭐️
-                      </span>
-                      <span className="text-sm text-gray-300">
-                        Купить
-                      </span>
+                      {isSpinning
+                        ? 'Крутим...'
+                        : `Открыть за ${
+                            getCasePrice(selectedCase.id) === 0
+                              ? 'Бесплатно'
+                              : getCasePrice(selectedCase.id) + ' ⭐️'
+                          }`}
                     </button>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-600 pt-4">
-                  <p className="text-sm text-gray-400 text-center mb-3">
-                    💎 TON
-                  </p>
-                  {TON_RATES.map(rate => (
-                    <button
-                      key={rate.stars}
-                      onClick={() =>
-                        topUpBalance(rate.stars, rate.ton)
-                      }
-                      className="w-full glass p-3 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10 mb-2"
-                    >
-                      <span className="font-bold">
-                        +{rate.stars} звезд ⭐️
-                      </span>
-                      <span className="text-yellow-400 font-bold">
-                        {rate.ton} TON
-                      </span>
-                    </button>
-                  ))}
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
-            <div className="max-w-md mx-auto flex justify-around">
-              {['tasks', 'cases', 'games', 'profile'].map(screen => (
-                <button
-                  key={screen}
-                  onClick={() => setCurrentScreen(screen)}
-                  className={`flex flex-col items-center p-2 rounded-lg transition ${
-                    currentScreen === screen
-                      ? 'text-blue-400 scale-110'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <span className="text-2xl">
-                    {screen === 'cases'
-                      ? '🎁'
-                      : screen === 'games'
-                      ? '🎮'
-                      : screen === 'tasks'
-                      ? '📋'
-                      : '👤'}
-                  </span>
-                  <span className="text-xs font-bold">
-                    {screen === 'cases'
-                      ? 'Кейсы'
-                      : screen === 'games'
-                      ? 'Игры'
-                      : screen === 'tasks'
-                      ? 'Задания'
-                      : 'Профиль'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </nav>
+            {showTopUp && (
+              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                <div className="glass rounded-2xl p-6 max-w-sm w-full">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold">💳 Пополнение</h3>
+                    <button
+                      onClick={() => setShowTopUp(false)}
+                      className="text-2xl hover:text-red-400 transition"
+                    >
+                      &times;
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 mb-4">
+                    <p className="text-sm text-gray-400 text-center">
+                      ⭐️ Telegram Stars
+                    </p>
+                    {STARS_PACKAGES.map(pkg => (
+                      <button
+                        key={pkg.stars}
+                        onClick={() => buyStars(pkg)}
+                        className="w-full glass p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10"
+                      >
+                        <span className="font-bold text-yellow-400">
+                          +{pkg.stars} ⭐️
+                        </span>
+                        <span className="text-sm text-gray-300">
+                          Купить
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-600 pt-4">
+                    <p className="text-sm text-gray-400 text-center mb-3">
+                      💎 TON
+                    </p>
+                    {TON_RATES.map(rate => (
+                      <button
+                        key={rate.stars}
+                        onClick={() =>
+                          topUpBalance(rate.stars, rate.ton)
+                        }
+                        className="w-full glass p-3 rounded-xl flex justify-between items-center hover:bg-white/10 transition border border-white/10 mb-2"
+                      >
+                        <span className="font-bold">
+                          +{rate.stars} звезд ⭐️
+                        </span>
+                        <span className="text-yellow-400 font-bold">
+                          {rate.ton} TON
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
+              <div className="max-w-md mx-auto flex justify-around">
+                {['tasks', 'cases', 'games', 'profile'].map(screen => (
+                  <button
+                    key={screen}
+                    onClick={() => setCurrentScreen(screen)}
+                    className={`flex flex-col items-center p-2 rounded-lg transition ${
+                      currentScreen === screen
+                        ? 'text-blue-400 scale-110'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-2xl">
+                      {screen === 'cases'
+                        ? '🎁'
+                        : screen === 'games'
+                        ? '🎮'
+                        : screen === 'tasks'
+                        ? '📋'
+                        : '👤'}
+                    </span>
+                    <span className="text-xs font-bold">
+                      {screen === 'cases'
+                        ? 'Кейсы'
+                        : screen === 'games'
+                        ? 'Игры'
+                        : screen === 'tasks'
+                        ? 'Задания'
+                        : 'Профиль'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </nav>
+          </main>
         </div>
       );
     }
