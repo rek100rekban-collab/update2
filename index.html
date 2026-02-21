@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Step By Step Game</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -31,6 +31,10 @@ to { transform: translateX(-50%); }
 @keyframes float {
 0%, 100% { transform: translateY(0); }
 50% { transform: translateY(-10px); }
+}
+@keyframes pulse-glow {
+0%, 100% { box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+50% { box-shadow: 0 0 25px rgba(0, 210, 255, 0.8); }
 }
 .roulette-container {
 mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
@@ -93,10 +97,11 @@ border: 3px solid #A0522D;
 .case-collector {
 background: linear-gradient(135deg, #DC143C 0%, #FF1493 50%, #8B008B 100%);
 border: 3px solid #FFD700;
+box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 min-h-screen text-white overflow-x-hidden">
+<body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 min-h-screen text-white overflow-x-hidden select-none">
 <div id="root"></div>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -120,14 +125,35 @@ const TelegramWebApp = window.Telegram?.WebApp;
 const ADMIN_WALLET = 'UQAWqaIPFSg81l9MlgAx0HBE9o3gpJMhk1dnyryKJXhWNHIc';
 const TONCENTER_API = 'https://toncenter.com/api/v2';
 const BOT_TOKEN = 'REMOVED_BOT_TOKEN';
+
+// КОНФИГУРАЦИЯ КЕЙСОВ И НАГРАД
 const CASE_REWARDS = {
 cardboard: [
 { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
 { id: 'stars_0_75', name: '0.75 ⭐️', displayChance: '10%', realChance: 10, type: 'stars', value: 0.75, emoji: '⭐️' },
 { id: 'stars_1_5', name: '1.5 ⭐️', displayChance: '6%', realChance: 6, type: 'stars', value: 1.5, emoji: '⭐️' },
 { id: 'stars_5', name: '5 ⭐️', displayChance: '2%', realChance: 2, type: 'stars', value: 5, emoji: '⭐️' },
-{ id: 'bear', name: '🧸', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🧸' },
+{ id: 'bear', name: '🧸', displayChance: '1.5%', realChance: 1.5, type: 'item', sellPrice: 15, emoji: '🧸' },
 { id: 'diamond_pro', name: '💎 PRO', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '💎' }
+],
+collector: [
+{ id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
+{ id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
+{ id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
+{ id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
+{ id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
+{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
+{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
+{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
+],
+// Остальные кейсы (сокращено для brevity, но логика та же)
+diamond: [
+{ id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐️' },
+{ id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
+{ id: 'stars_25', name: '25 ⭐️', displayChance: '9%', realChance: 9, type: 'stars', value: 25, emoji: '⭐️' },
+{ id: 'stars_80', name: '80 ⭐️', displayChance: '4%', realChance: 4, type: 'stars', value: 80, emoji: '⭐️' },
+{ id: 'diamond_pro', name: 'Алмаз PRO 💎', displayChance: '0.6%', realChance: 0.6, type: 'collectible', emoji: '💎' },
+{ id: 'snoop_pro', name: 'Snoop Dog PRO 🐕', displayChance: '0.4%', realChance: 0.4, type: 'collectible', emoji: '🐕' }
 ],
 coal: [
 { id: 'stars_2_5', name: '2.5 ⭐️', displayChance: '60%', realChance: 60, type: 'stars', value: 2.5, emoji: '⭐️' },
@@ -136,6 +162,13 @@ coal: [
 { id: 'stars_15', name: '15 ⭐️', displayChance: '6%', realChance: 6, type: 'stars', value: 15, emoji: '⭐️' },
 { id: 'material', name: 'Материал 🧱', displayChance: '5%', realChance: 5, type: 'item', sellPrice: 40, emoji: '🧱' },
 { id: 'brownie_pro', name: 'Happy Brownie PRO 💩', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '💩' }
+],
+elite: [
+{ id: 'stars_200', name: '200 ⭐️', displayChance: '75%', realChance: 75, type: 'stars', value: 200, emoji: '⭐️' },
+{ id: 'stars_275', name: '275 ⭐️', displayChance: '5%', realChance: 5, type: 'stars', value: 275, emoji: '⭐️' },
+{ id: 'champagne', name: '🍾', displayChance: '17%', realChance: 17, type: 'collectible', emoji: '🍾' },
+{ id: 'socks', name: 'Носки 🧦', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🧦' },
+{ id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '⚔️' }
 ],
 platinum: [
 { id: 'stars_35', name: '35 ⭐️', displayChance: '55%', realChance: 55, type: 'stars', value: 35, emoji: '⭐️' },
@@ -159,21 +192,6 @@ money: [
 { id: 'bday_happy', name: 'Happy B-day 💈', displayChance: '4%', realChance: 4, type: 'collectible', emoji: '💈' },
 { id: 'cigar', name: 'Snoop Cigar 🚬', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '🚬' }
 ],
-elite: [
-{ id: 'stars_200', name: '200 ⭐️', displayChance: '75%', realChance: 75, type: 'stars', value: 200, emoji: '⭐️' },
-{ id: 'stars_275', name: '275 ⭐️', displayChance: '5%', realChance: 5, type: 'stars', value: 275, emoji: '⭐️' },
-{ id: 'champagne', name: '🍾', displayChance: '17%', realChance: 17, type: 'collectible', emoji: '🍾' },
-{ id: 'socks', name: 'Носки 🧦', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🧦' },
-{ id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '⚔️' }
-],
-diamond: [
-{ id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐️' },
-{ id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
-{ id: 'stars_25', name: '25 ⭐️', displayChance: '9%', realChance: 9, type: 'stars', value: 25, emoji: '⭐️' },
-{ id: 'stars_80', name: '80 ⭐️', displayChance: '4%', realChance: 4, type: 'stars', value: 80, emoji: '⭐️' },
-{ id: 'diamond_pro', name: 'Алмаз PRO 💎', displayChance: '0.6%', realChance: 0.6, type: 'collectible', emoji: '💎' },
-{ id: 'snoop_pro', name: 'Snoop Dog PRO 🐕', displayChance: '0.4%', realChance: 0.4, type: 'collectible', emoji: '🐕' }
-],
 winter: [
 { id: 'stars_20', name: '20 ⭐️', displayChance: '60%', realChance: 60, type: 'stars', value: 20, emoji: '⭐️' },
 { id: 'stars_35', name: '35 ⭐️', displayChance: '35%', realChance: 35, type: 'stars', value: 35, emoji: '⭐️' },
@@ -189,18 +207,9 @@ major: [
 { id: 'car', name: '🚗 Автомобиль', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🚗' },
 { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
 { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
-],
-collector: [
-{ id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
-{ id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
-{ id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
-{ id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
-{ id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
-{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🍜' },
-{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '🎩' },
-{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '🦅' }
 ]
 };
+
 const ICE_ARENA_PRIZES = [
 { id: 'bear', name: '🧸 Мишка', chance: 40, type: 'item', sellPrice: 20, emoji: '🧸' },
 { id: 'gloves', name: '🧤 Варежки', chance: 30, type: 'item', sellPrice: 50, emoji: '🧤' },
@@ -213,8 +222,9 @@ const ICE_ARENA_PRIZES = [
 { id: 'scarf', name: '🧣 Зимнее сокровище', chance: 0.5, type: 'collectible', emoji: '🧣' },
 { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
 ];
+
 const INITIAL_CASES = {
-cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: false, freeCount: 0 },
+cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: true, freeCount: 0 },
 coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
 platinum: { id: 'platinum', name: 'Платина', emoji: '💎', price: 100, color: 'from-gray-300 to-gray-500', locked: false },
 gold: { id: 'gold', name: 'Золотой', emoji: '👑', price: 250, color: 'from-yellow-400 to-yellow-600', locked: false },
@@ -225,6 +235,7 @@ winter: { id: 'winter', name: 'Зимний', emoji: '☃️', price: 125, origi
 major: { id: 'major', name: 'Мажор', emoji: '🤴', price: 800, color: 'from-purple-500 to-indigo-700', locked: true, isNew: false, freeCount: 0 },
 collector: { id: 'collector', name: 'Коллекционер', emoji: '🎩', price: 650, color: 'from-rose-600 to-pink-800', locked: true, isNew: true, freeCount: 0 }
 };
+
 const TON_RATES = [
 { stars: 50, ton: 0.6 },
 { stars: 250, ton: 3 },
@@ -238,6 +249,7 @@ const STARS_PACKAGES = [
 { stars: 500, price: 500, name: '500 звезд' },
 { stars: 1000, price: 1000, name: '1000 звезд' }
 ];
+
 function App() {
 const [currentScreen, setCurrentScreen] = useState('cases');
 const [balance, setBalance] = useState(0);
@@ -293,8 +305,8 @@ const [withdrawAmount, setWithdrawAmount] = useState('');
 const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 const [totalDeposits, setTotalDeposits] = useState(0);
 const [lobbyTimer, setLobbyTimer] = useState(null);
-// Сохраняем цену кейса при открытии
 const [currentCasePrice, setCurrentCasePrice] = useState(0);
+
 useEffect(() => {
 const initApp = async () => {
 let userId = null;
@@ -392,6 +404,7 @@ setIsLoading(false);
 };
 initApp();
 }, []);
+
 useEffect(() => {
 if (user?.id) {
 const onlineRef = db.ref('online/' + user.id);
@@ -406,6 +419,7 @@ onlineRef.remove();
 };
 }
 }, [user?.id]);
+
 useEffect(() => {
 if (user?.id && !isLoading) {
 const saveData = async () => {
@@ -428,6 +442,7 @@ const interval = setInterval(saveData, 5000);
 return () => clearInterval(interval);
 }
 }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, isLoading, totalDeposits]);
+
 useEffect(() => {
 const handleBeforeUnload = async () => {
 if (user?.id) {
@@ -447,6 +462,7 @@ totalDeposits
 window.addEventListener('beforeunload', handleBeforeUnload);
 return () => window.removeEventListener('beforeunload', handleBeforeUnload);
 }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, totalDeposits]);
+
 useEffect(() => {
 if (currentGame?.type === 'ice' && currentGame.lobbyId) {
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
@@ -464,7 +480,7 @@ setHasBet(false);
 setIsReady(false);
 }
 if (data.ballPosition) setBallPos(data.ballPosition);
-if (data.timerEnd && data.status === 'betting') {
+if (data.timerEnd && data.status === 'countdown') {
 const remaining = Math.max(0, Math.ceil((data.timerEnd - Date.now()) / 1000));
 setTimerRemaining(remaining);
 } else {
@@ -478,6 +494,7 @@ setShowPrizeChest(true);
 }
 }
 }
+// Логика таймера лобби (сброс если 1 игрок)
 if (data.players && Object.keys(data.players).length === 1 && !data.lobbyTimerStarted) {
 const timerEnd = Date.now() + 180000;
 lobbyRef.update({ lobbyTimerStarted: true, lobbyTimerEnd: timerEnd });
@@ -509,6 +526,7 @@ lobbyRef.update({ lobbyTimerStarted: false, lobbyTimerEnd: null });
 return () => lobbyRef.off();
 }
 }, [currentGame, user?.id, showPrizeChest, lobbyTimer]);
+
 if (isLoading || !user) {
 return (
 <div className="min-h-screen flex items-center justify-center">
@@ -516,6 +534,7 @@ return (
 </div>
 );
 }
+
 const handleTitleClick = () => {
 const newAttempts = adminAttempts + 1;
 setAdminAttempts(newAttempts);
@@ -524,6 +543,7 @@ setShowAdminLogin(true);
 setAdminAttempts(0);
 }
 };
+
 const checkAdminLogin = () => {
 if (adminLogin === 'REMOVED' && adminPassword === 'REMOVED') {
 setIsAdmin(true);
@@ -537,6 +557,7 @@ setAllUsers(users);
 alert('Неверный логин или пароль!');
 }
 };
+
 const adminGiveReward = async (targetUserId, reward) => {
 const snapshot = await db.ref('users/' + targetUserId).once('value');
 const userData = snapshot.val() || {};
@@ -578,6 +599,7 @@ if (targetUserId === user.id) setCases(updatedCases);
 }
 alert('Награда выдана!');
 };
+
 const joinIceLobby = async (lobbyId) => {
 const lobbyRef = db.ref('iceLobbies/' + lobbyId);
 const snap = await lobbyRef.once('value');
@@ -603,6 +625,7 @@ lobbyTimerEnd: null
 }
 setCurrentGame({ type: 'ice', lobbyId });
 };
+
 const placeBet = async () => {
 if (balance < myBet) {
 alert('Недостаточно звезд!');
@@ -626,6 +649,7 @@ await lobbyRef.child('readyPlayers/' + user.id).remove();
 setIsReady(false);
 await db.ref('users/' + user.id + '/balance').set(newBalance);
 };
+
 const toggleReady = async () => {
 if (!hasBet) return;
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
@@ -640,12 +664,14 @@ const snap = await lobbyRef.once('value');
 const data = snap.val();
 const playersCount = Object.keys(data.players || {}).length;
 const readyPlayersCount = Object.keys(data.readyPlayers || {}).length;
-if (playersCount >= 2 && readyPlayersCount === playersCount && !data.countdownStarted) {
-const timerEnd = Date.now() + 5000;
-await lobbyRef.update({ status: 'betting', timerEnd: timerEnd, countdownStarted: true });
-setTimeout(() => startIceGame(lobbyRef), 5000);
+// Старт если >= 3 игроков и >= 2 готовых
+if (playersCount >= 3 && readyPlayersCount >= 2 && !data.countdownStarted) {
+const timerEnd = Date.now() + 10000; // 10 секунд
+await lobbyRef.update({ status: 'countdown', timerEnd: timerEnd, countdownStarted: true });
+setTimeout(() => startIceGame(lobbyRef), 10000);
 }
 };
+
 const startIceGame = async (lobbyRef) => {
 await lobbyRef.update({ status: 'playing' });
 let x = 50, y = 50, vx = (Math.random() - 0.5) * 20, vy = (Math.random() - 0.5) * 20;
@@ -676,6 +702,7 @@ await finishIceGame(lobbyRef, x, y);
 }
 }, 25);
 };
+
 const finishIceGame = async (lobbyRef, finalX, finalY) => {
 const snap = await lobbyRef.once('value');
 const data = snap.val();
@@ -723,6 +750,7 @@ setBalance(newBalance);
 await db.ref('users/' + user.id + '/balance').set(newBalance);
 }
 };
+
 const openChest = async () => {
 if (openedChestCount < 1) {
 const prize = chestPrizes[0];
@@ -751,51 +779,61 @@ setShowNewGamePrompt(true);
 }, 1500);
 }
 };
+
 const getCasePrice = (caseType) => {
 const c = cases[caseType];
 if (c.freeCount > 0) return 0;
 if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
 return c.price;
 };
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТКРЫТИЯ КЕЙСА - БЕЗ ВОЗВРАТА СТОИМОСТИ
+
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТКРЫТИЯ КЕЙСА
 const openCase = async (caseType) => {
 const price = getCasePrice(caseType);
 const isFreeCase = cases[caseType]?.freeCount > 0;
-// Проверяем баланс только если кейс платный
+
+// 1. Проверка баланса (только если кейс платный)
 if (!isFreeCase && price > 0 && balance < price) {
 alert('Недостаточно звезд!');
 return;
 }
-// Сохраняем текущий баланс ДО списания
+
+// 2. Сохраняем текущий баланс ДО списания
 const balanceBefore = balance;
-// Вычисляем новый баланс после покупки (ТОЛЬКО списание, без возврата)
+
+// 3. Вычисляем новый баланс после покупки (ТОЛЬКО списание)
 let newBalanceAfterPurchase = balanceBefore;
 if (!isFreeCase && price > 0) {
 newBalanceAfterPurchase = balanceBefore - price;
 }
-// Сразу обновляем UI и Firebase - списываем звезды за кейс (если платный)
+
+// 4. Сразу обновляем UI и Firebase - списываем звезды за кейс
 if (!isFreeCase && price > 0) {
 setBalance(newBalanceAfterPurchase);
 await db.ref('users/' + user.id + '/balance').set(newBalanceAfterPurchase);
 }
-// Уменьшаем счетчик бесплатных кейсов
+
+// 5. Уменьшаем счетчик бесплатных кейсов
 if (isFreeCase) {
 const newFreeCount = cases[caseType].freeCount - 1;
 setCases(prev => ({ ...prev, [caseType]: { ...prev[caseType], freeCount: newFreeCount } }));
 await db.ref(`users/${user.id}/cases/${caseType}/freeCount`).set(newFreeCount);
 }
-// Сохраняем цену для информации
+
+// 6. Сохраняем цену для информации
 setCurrentCasePrice(price);
-// Запускаем анимацию
+
+// 7. Запускаем анимацию
 setIsSpinning(true);
 setSelectedCase({ ...cases[caseType], id: caseType });
-// Через 3 секунды показываем результат
+
+// 8. Через 3 секунды показываем результат
 setTimeout(async () => {
 const items = CASE_REWARDS[caseType];
 const rand = Math.random() * 100;
 let cum = 0, won = items[0];
 for (const item of items) {
-cum += item.realChance;
+cum += item.realChance; // Используем реальные шансы
 if (rand <= cum) {
 won = item;
 break;
@@ -803,10 +841,11 @@ break;
 }
 setSpinResult(won);
 setIsSpinning(false);
-// Обрабатываем выигрыш
+
+// 9. Обрабатываем выигрыш
 if (won.type === 'stars') {
-// Если выпали звезды - добавляем к текущему балансу (который уже без стоимости кейса)
-// ✅ ВАЖНО: стоимость кейса НЕ возвращается, только награда добавляется
+// Если выпали звезды - добавляем к балансу (который уже без стоимости кейса)
+// Формула: Баланс - Цена + Награда
 const finalBalance = newBalanceAfterPurchase + won.value;
 setBalance(finalBalance);
 await db.ref(`users/${user.id}/balance`).set(finalBalance);
@@ -816,6 +855,7 @@ await addToInventory(won);
 }
 }, 3000);
 };
+
 const addToInventory = async (item) => {
 if (inventory.length < inventorySlots) {
 const newItem = { ...item, uniqueId: Date.now(), collected: Date.now() };
@@ -826,6 +866,7 @@ await db.ref(`users/${user.id}/inventory`).set(newInventory);
 alert('Инвентарь полон!');
 }
 };
+
 const sellItem = async (item) => {
 if (item.type === 'ice_gift') {
 setSelectedIceGift(item);
@@ -856,6 +897,7 @@ setInventory(newInventory);
 await db.ref(`users/${user.id}`).update({ balance: newBalance, inventory: newInventory });
 }
 };
+
 const sellIceGift = async () => {
 if (!selectedIceGift) return;
 const newBalance = balance + 25;
@@ -867,10 +909,12 @@ setShowIceGiftModal(false);
 setSelectedIceGift(null);
 alert('Продано за 25⭐️!');
 };
+
 const keepIceGift = () => {
 setShowIceGiftModal(false);
 setSelectedIceGift(null);
 };
+
 const unlockSlot = async () => {
 if (balance >= 50) {
 if (confirm('Разблокировать слот за 50 ⭐️?')) {
@@ -884,6 +928,7 @@ await db.ref(`users/${user.id}`).update({ balance: newBalance, inventorySlots: n
 alert('Недостаточно звезд!');
 }
 };
+
 const checkPromo = async () => {
 const code = promoCode.toUpperCase();
 if (usedPromos.includes(code)) {
@@ -916,9 +961,11 @@ setPromoError('Неверный промокод');
 return;
 }
 };
+
 const generatePaymentId = () => {
 return 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 };
+
 const topUpBalance = async (stars, ton) => {
 const paymentId = generatePaymentId();
 const memo = `SBS_${user.id}_${stars}_${paymentId}`;
@@ -930,6 +977,7 @@ setPaymentStatus(`Отправьте ${ton} TON с комментарием: ${m
 setShowTopUp(false);
 setTimeout(() => checkPayment(paymentId), 10000);
 };
+
 const checkPayment = async (paymentId) => {
 const payment = pendingPayments.find(p => p.id === paymentId);
 if (!payment || payment.status === 'completed') return;
@@ -980,6 +1028,7 @@ setPaymentStatus('Ошибка проверки. Попробуйте позже
 setCheckingPayment(false);
 }
 };
+
 const buyStars = async (pkg) => {
 try {
 const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
@@ -1053,13 +1102,14 @@ console.error('Stars payment error:', error);
 alert('Ошибка платежа. Попробуйте позже.');
 }
 };
+
 const completeTask = async (taskId) => {
 if (taskId === 'subscribe') {
 window.open('https://t.me/stepbystepdelision', '_blank');
 setTimeout(async () => {
 if (!tasks.subscribe?.completed) {
 const newTasks = { ...tasks, subscribe: { completed: true } };
-// ✅ ИСПРАВЛЕНО: Добавляем 1 бесплатный кейс Элита + 1 бесплатный прокрут
+// ✅ ИСПРАВЛЕНО: 1 бесплатный кейс Элита + 1 бесплатный прокрут
 const newCases = { 
 ...cases, 
 elite: { 
@@ -1082,6 +1132,7 @@ const link = 'https://t.me/share/url?url=' + encodeURIComponent(`https://t.me/st
 window.open(link, '_blank');
 }
 };
+
 const handleWithdraw = () => {
 if (totalDeposits < 350) {
 setShowWithdrawModal(false);
@@ -1091,11 +1142,13 @@ alert('Вывод подарков доступен только при попо
 alert('Выберите количество звезд, которое желаете вывести');
 }
 };
+
 const confirmWithdraw = (type) => {
 alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора! https://t.me/stepbystepdelision');
 setShowWithdrawModal(false);
 setWithdrawAmount('');
 };
+
 const renderIceArenaField = () => {
 if (!iceLobby?.players) return null;
 const players = Object.entries(iceLobby.players);
@@ -1126,6 +1179,7 @@ return (
 );
 });
 };
+
 if (isAdmin) {
 return (
 <div className="min-h-screen bg-gray-900 p-4">
@@ -1242,6 +1296,7 @@ return (
 </div>
 );
 }
+
 if (currentGame?.type === 'ice') {
 return (
 <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -1252,15 +1307,15 @@ return (
 </div>
 <div className="text-center mb-4">
 <div className="text-sm text-cyan-300">Лобби #{currentGame.lobbyId}</div>
-<div className="text-lg font-bold text-white"> {gameStatus === 'waiting' ? '⏳ Ожидание игроков...' : gameStatus === 'betting' ? '💰 Идёт ставка!' : gameStatus === 'playing' ? '🔴 Шарик летит!' : '🏆 Игра окончена'} </div>
-{gameStatus === 'betting' && timerRemaining > 0 && (
+<div className="text-lg font-bold text-white"> {gameStatus === 'waiting' ? '⏳ Ожидание игроков...' : gameStatus === 'countdown' ? '💰 Идёт ставка!' : gameStatus === 'playing' ? '🔴 Шарик летит!' : '🏆 Игра окончена'} </div>
+{gameStatus === 'countdown' && timerRemaining > 0 && (
 <div className="text-3xl font-bold text-yellow-400 animate-pulse mt-2"> ⏰ {timerRemaining} сек </div>
 )}
 </div>
 <div className="flex justify-center mb-6">
 <div className="ice-circle relative">
 {renderIceArenaField()}
-{(gameStatus === 'waiting' || gameStatus === 'betting') && (
+{(gameStatus === 'waiting' || gameStatus === 'countdown') && (
 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-cyan-400 shadow-lg shadow-cyan-500/50"> ❓ </div>
 )}
 {gameStatus === 'playing' && (
@@ -1271,7 +1326,7 @@ return (
 )}
 </div>
 </div>
-{(gameStatus === 'waiting' || gameStatus === 'betting') && !hasBet ? (
+{(gameStatus === 'waiting' || gameStatus === 'countdown') && !hasBet ? (
 <div className="glass rounded-xl p-4 mb-4 border border-cyan-500/30">
 {iceLobby?.players && Object.keys(iceLobby.players).length < 2 ? (
 <div className="text-center text-yellow-400 py-4"> ⏳ Ожидаем второго игрока... </div>
@@ -1355,8 +1410,10 @@ return (
 </div>
 </div>
 </div>
+</div>
 );
 }
+
 return (
 <div className="min-h-screen pb-24">
 <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
