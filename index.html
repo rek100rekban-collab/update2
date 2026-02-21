@@ -225,6 +225,7 @@
       const [showCollectibleModal, setShowCollectibleModal] = useState(false);
       const [selectedCollectible, setSelectedCollectible] = useState(null);
       const [isLoading, setIsLoading] = useState(true);
+      const [totalDeposited, setTotalDeposited] = useState(0);
       
       const [currentGame, setCurrentGame] = useState(null);
       const [iceLobby, setIceLobby] = useState(null);
@@ -315,6 +316,7 @@
               setInventorySlots(data.inventorySlots || 5);
               setUsedPromos(data.usedPromos || []);
               setWonPromos(data.wonPromos || []);
+              setTotalDeposited(data.totalDeposited || 0);
             } else {
               const newCases = { ...INITIAL_CASES, diamond: { ...INITIAL_CASES.diamond, freeCount: 5 } };
               setCases(newCases);
@@ -327,6 +329,7 @@
                 inventorySlots: 5,
                 usedPromos: [],
                 wonPromos: [],
+                totalDeposited: 0,
                 createdAt: Date.now(),
                 lastActive: Date.now()
               });
@@ -369,6 +372,7 @@
               inventorySlots,
               usedPromos,
               wonPromos,
+              totalDeposited,
               lastActive: Date.now()
             };
             
@@ -380,7 +384,7 @@
           const interval = setInterval(saveData, 5000);
           return () => clearInterval(interval);
         }
-      }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, isLoading]);
+      }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, totalDeposited, user?.id, isLoading]);
 
       useEffect(() => {
         const handleBeforeUnload = async () => {
@@ -393,6 +397,7 @@
               inventorySlots,
               usedPromos,
               wonPromos,
+              totalDeposited,
               lastActive: Date.now()
             });
           }
@@ -400,7 +405,7 @@
         
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-      }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id]);
+      }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, totalDeposited, user?.id]);
 
       useEffect(() => {
         if (currentGame?.type === 'ice' && currentGame.lobbyId) {
@@ -508,8 +513,9 @@
         } else if (reward.type === 'unlock_collector') {
           const current = userData.cases?.collector?.locked || true;
           await db.ref(`users/${targetUserId}/cases/collector/locked`).set(false);
+          await db.ref(`users/${targetUserId}/cases/collector/freeCount`).set(1);
           if (targetUserId === user.id) {
-            setCases(prev => ({ ...prev, collector: { ...prev.collector, locked: false } }));
+            setCases(prev => ({ ...prev, collector: { ...prev.collector, locked: false, freeCount: 1 } }));
           }
         }
         alert('Награда выдана!');
@@ -716,8 +722,14 @@
         const price = getCasePrice(caseType);
         if (price > 0 && balance < price) { alert('Недостаточно звезд!'); return; }
         
-        // Списываем стоимость кейса
-        if (price > 0) setBalance(b => b - price);
+        const currentBalance = balance;
+        
+        // Списываем стоимость кейса СРАЗУ
+        if (price > 0) {
+          const newBalance = currentBalance - price;
+          setBalance(newBalance);
+          await db.ref(`users/${user.id}/balance`).set(newBalance);
+        }
         
         // Уменьшаем счетчик бесплатных прокрутов
         if (cases[caseType].freeCount > 0) {
@@ -740,9 +752,10 @@
           setSpinResult(won);
           setIsSpinning(false);
           
-          // Начисляем выигрыш (только если выпали звезды)
+          // Начисляем ТОЛЬКО выигрыш (не возвращаем потраченное)
           if (won.type === 'stars') {
-            const newBalance = balance + won.value;
+            const winAmount = won.value;
+            const newBalance = currentBalance - price + winAmount;
             setBalance(newBalance);
             await db.ref(`users/${user.id}/balance`).set(newBalance);
           } else {
@@ -938,7 +951,9 @@
 
             if (foundTx) {
               const newBalance = balance + payment.stars;
+              const newTotalDeposited = totalDeposited + payment.stars;
               setBalance(newBalance);
+              setTotalDeposited(newTotalDeposited);
               
               const newPayments = pendingPayments.map(p => 
                 p.id === paymentId ? {...p, status: 'completed', txHash: foundTx.transaction_id.hash} : p
@@ -946,7 +961,10 @@
               setPendingPayments(newPayments);
               setPaymentStatus(`✅ Успешно! Зачислено ${payment.stars} звезд`);
               
-              await db.ref(`users/${user.id}/balance`).set(newBalance);
+              await db.ref(`users/${user.id}`).update({
+                balance: newBalance,
+                totalDeposited: newTotalDeposited
+              });
               
               if (!tasks.deposit.completed && payment.stars >= 100) {
                 const newTasks = { ...tasks, deposit: { completed: true } };
@@ -1005,8 +1023,13 @@
               TelegramWebApp.openInvoice(data.result, async (status) => {
                 if (status === 'paid') {
                   const newBalance = balance + pkg.stars;
+                  const newTotalDeposited = totalDeposited + pkg.stars;
                   setBalance(newBalance);
-                  await db.ref(`users/${user.id}/balance`).set(newBalance);
+                  setTotalDeposited(newTotalDeposited);
+                  await db.ref(`users/${user.id}`).update({
+                    balance: newBalance,
+                    totalDeposited: newTotalDeposited
+                  });
                   alert(`✅ Успешно! Зачислено ${pkg.stars} звезд!`);
                   
                   if (!tasks.deposit.completed && pkg.stars >= 100) {
@@ -1040,8 +1063,13 @@
               window.open(data.result, '_blank');
               alert('После оплаты нажмите ОК для проверки');
               const newBalance = balance + pkg.stars;
+              const newTotalDeposited = totalDeposited + pkg.stars;
               setBalance(newBalance);
-              await db.ref(`users/${user.id}/balance`).set(newBalance);
+              setTotalDeposited(newTotalDeposited);
+              await db.ref(`users/${user.id}`).update({
+                balance: newBalance,
+                totalDeposited: newTotalDeposited
+              });
             }
           } else {
             alert('Ошибка создания платежа: ' + (data.description || 'Unknown error'));
@@ -1093,6 +1121,18 @@
         } else if (taskId === 'invite') {
           const link = 'https://t.me/share/url?url=' + encodeURIComponent(`https://t.me/stepbystep_game_bot?start=${user.id}`);
           window.open(link, '_blank');
+        }
+      };
+
+      const handleWithdraw = (type) => {
+        setWithdrawType(type);
+        if (totalDeposited < 200) {
+          alert('Для вывода призов необходим депозит в количестве 200 звезд⭐️!');
+          setShowWithdrawModal(false);
+          setShowTopUp(true);
+        } else {
+          alert('Обратитесь к администрации для получения приза! https://t.me/stepbystepdelision');
+          setShowWithdrawModal(false);
         }
       };
 
@@ -1442,7 +1482,7 @@
         <div className="min-h-screen pb-24">
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
             <h1 onClick={handleTitleClick} className="text-xl font-bold cursor-pointer select-none hover:text-cyan-300 transition">Step By Step Game</h1>
-            <button onClick={() => alert('Пополните баланс 🎯')} className="bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full font-bold text-gray-900 shadow-lg">
+            <button onClick={() => setShowTopUp(true)} className="bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full font-bold text-gray-900 shadow-lg">
               {balance.toFixed(2)} ⭐️
             </button>
           </header>
@@ -1512,34 +1552,19 @@
             <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
               <div className="glass rounded-2xl p-6 max-w-sm w-full text-center">
                 <h2 className="text-2xl font-bold mb-4">📊 Вывести призы</h2>
-                <p className="text-gray-300 mb-4">Введите количество звезд для вывода:</p>
-                <input 
-                  type="number" 
-                  min="1" 
-                  max={balance}
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 mb-4 text-center text-xl"
-                  placeholder="Количество звезд"
-                />
+                <p className="text-gray-300 mb-4">Выберите способ вывода:</p>
                 <div className="flex gap-4">
                   <button 
-                    onClick={() => {
-                      setWithdrawType('gift');
-                      alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора!');
-                    }}
+                    onClick={() => handleWithdraw('gift')}
                     className="flex-1 bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-bold"
                   >
-                    🎁 Вывод в подарках
+                    🎁 В подарках
                   </button>
                   <button 
-                    onClick={() => {
-                      setWithdrawType('stars');
-                      alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора!');
-                    }}
+                    onClick={() => handleWithdraw('stars')}
                     className="flex-1 bg-yellow-600 hover:bg-yellow-500 py-3 rounded-xl font-bold"
                   >
-                    ⭐️ Вывод в звездах
+                    ⭐️ В звездах
                   </button>
                 </div>
                 <button onClick={() => setShowWithdrawModal(false)} className="w-full mt-4 bg-gray-700 hover:bg-gray-600 py-2 rounded-xl">Отмена</button>
@@ -1667,47 +1692,50 @@
                 <h2 className="text-2xl font-bold mb-4 text-center">🎮 Игры</h2>
                 <div className="space-y-4">
                   <div 
-                    className="glass rounded-xl p-6 cursor-pointer hover:bg-white/10 transition border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/20"
+                    className="glass rounded-2xl p-6 cursor-pointer hover:bg-white/10 transition border-2 border-cyan-500/50 shadow-xl shadow-cyan-500/30 relative overflow-hidden"
                     onClick={() => setCurrentGame({ type: 'ice' })}
                   >
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="text-5xl">☃️</div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-bl-full"></div>
+                    <div className="flex items-center gap-4 mb-3 relative z-10">
+                      <div className="text-5xl animate-bounce">☃️</div>
                       <div>
                         <h3 className="text-2xl font-bold text-cyan-300">Ледяной Каток</h3>
                         <p className="text-sm text-gray-300">Соревнуйся с игроками!</p>
                       </div>
                     </div>
-                    <p className="text-gray-400 mb-4 text-center">Мин. ставка 25⭐️ • Победа 42% банка</p>
-                    <div className="grid grid-cols-5 gap-2">
+                    <p className="text-gray-400 mb-4 text-center relative z-10">Мин. ставка 25⭐️ • Победа 42% банка</p>
+                    <div className="grid grid-cols-5 gap-2 relative z-10">
                       {[1,2,3,4,5,6,7,8,9,10].map(i => (
                         <button key={i} onClick={(e) => { e.stopPropagation(); joinIceLobby(i); }} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 py-2 rounded-lg text-sm font-bold transition shadow-lg">#{i}</button>
                       ))}
                     </div>
                   </div>
                   
-                  <div className="glass rounded-xl p-6 opacity-60 border border-gray-600">
-                    <div className="flex items-center gap-4 mb-3">
+                  <div className="glass rounded-2xl p-6 opacity-60 border border-gray-600 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gray-500/10 rounded-bl-full"></div>
+                    <div className="flex items-center gap-4 mb-3 relative z-10">
                       <div className="text-5xl grayscale">🎰</div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-400">Слоты</h3>
                         <p className="text-sm text-gray-500">В разработке...</p>
                       </div>
                     </div>
-                    <div className="text-center text-gray-500">
+                    <div className="text-center text-gray-500 relative z-10">
                       <span className="text-3xl">👷</span>
                       <p className="text-sm mt-2">Скоро открытие!</p>
                     </div>
                   </div>
                   
-                  <div className="glass rounded-xl p-6 opacity-60 border border-gray-600">
-                    <div className="flex items-center gap-4 mb-3">
+                  <div className="glass rounded-2xl p-6 opacity-60 border border-gray-600 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gray-500/10 rounded-bl-full"></div>
+                    <div className="flex items-center gap-4 mb-3 relative z-10">
                       <div className="text-5xl grayscale">🎲</div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-400">Кости</h3>
                         <p className="text-sm text-gray-500">В разработке...</p>
                       </div>
                     </div>
-                    <div className="text-center text-gray-500">
+                    <div className="text-center text-gray-500 relative z-10">
                       <span className="text-3xl">👷</span>
                       <p className="text-sm mt-2">Скоро открытие!</p>
                     </div>
@@ -1767,19 +1795,25 @@
                   </button>
                 </div>
 
-                {!tasks.deposit350.completed ? (
-                  <div className="glass rounded-xl p-4 mt-4 text-center">
-                    <p className="text-gray-400 mb-2">🔒 Вывод призов заблокирован</p>
-                    <p className="text-sm text-gray-500">Выполните задание «Пополнить баланс на 350⭐️»</p>
+                <div className="glass rounded-xl p-4 mt-4">
+                  <div className="text-center mb-3">
+                    <p className="text-gray-400">Ваш депозит: <span className="text-yellow-400 font-bold">{totalDeposited}⭐️</span></p>
+                    <p className="text-sm text-gray-500">Для вывода нужно 200⭐️</p>
                   </div>
-                ) : (
-                  <button 
-                    onClick={() => setShowWithdrawModal(true)} 
-                    className="w-full glass rounded-xl p-4 mt-4 text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 transition"
-                  >
-                    🏆 Вывести призы
-                  </button>
-                )}
+                  {totalDeposited < 200 ? (
+                    <div className="text-center">
+                      <p className="text-gray-400 mb-2">🔒 Вывод призов заблокирован</p>
+                      <p className="text-sm text-gray-500">Пополните баланс на 200+ ⭐️</p>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setShowWithdrawModal(true)} 
+                      className="w-full glass rounded-xl p-4 text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 transition"
+                    >
+                      🏆 Вывести призы
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </main>
