@@ -71,9 +71,7 @@
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     const BOT_TOKEN = '8325421899:AAHRdmMYdjJMXmAVIynDsQtpUNsSeKkaOis';
 
-    // ====== НАБОР НАГРАД ДЛЯ ВСЕХ КЕЙСОВ ======
-    // Добавлены: cardboard (Картон) с реальными шансами
-    // Изменен: collector (Коллекционер) с отдельными displayChance и realChance
+    // ====== НАБОР НАГРАД: КАРТОН + КОЛЛЕКЦИОНЕР С ОТДЕЛЬНЫМИ ШАНСАМИ ======
     const CASE_REWARDS = {
       cardboard: [
         { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
@@ -171,7 +169,7 @@
       { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
     ];
 
-    // ====== ИЗМЕНЕНО: ДОБАВЛЕН КЕЙС КАРТОН, КОЛЛЕКЦИОНЕР ЗАБЛОКИРОВАН ======
+    // ====== ИЗМЕНЕНО: ДОБАВЛЕН КЕЙС КАРТОН, КОЛЛЕКЦИОНЕР ЗАБЛОКИРОВАН, УГОЛЕК -> 🪨 ======
     const INITIAL_CASES = {
       cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: true, freeCount: 0 },
       coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
