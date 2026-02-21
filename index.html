@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Step By Step Game</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -93,29 +93,16 @@ border: 3px solid #A0522D;
 .case-collector {
 background: linear-gradient(135deg, #DC143C 0%, #FF1493 50%, #8B008B 100%);
 border: 3px solid #FFD700;
-box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 min-h-screen text-white overflow-x-hidden">
 <div id="root"></div>
-<div id="error-display" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:9999; padding:20px; color:white; overflow:auto; text-align:center;">
-<h2 style="color:#ef4444; margin-bottom:20px;">⚠️ Ошибка загрузки</h2>
-<p id="error-message" style="margin-bottom:20px;"></p>
-<button onclick="location.reload()" style="background:#6366f1; color:white; border:none; padding:12px 24px; border-radius:8px; cursor:pointer; font-size:16px;">🔄 Перезагрузить</button>
-</div>
-
-<!-- React и ReactDOM загружаются ПЕРЕД Babel -->
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
-
-// ✅ БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ FIREBASE
-let db;
-try {
 const firebaseConfig = {
 apiKey: "REMOVED_FIREBASE_API_KEY",
 authDomain: "step-by-step-279df.firebaseapp.com",
@@ -128,16 +115,11 @@ appId: "1:302641152597:web:6479b9ae03104666cd8adc"
 if (!firebase.apps.length) {
 firebase.initializeApp(firebaseConfig);
 }
-db = firebase.database();
-} catch (e) {
-console.error('Firebase initialization error:', e);
-}
-
+const db = firebase.database();
 const TelegramWebApp = window.Telegram?.WebApp;
 const ADMIN_WALLET = 'UQAWqaIPFSg81l9MlgAx0HBE9o3gpJMhk1dnyryKJXhWNHIc';
 const TONCENTER_API = 'https://toncenter.com/api/v2';
 const BOT_TOKEN = 'REMOVED_BOT_TOKEN';
-
 const CASE_REWARDS = {
 cardboard: [
 { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
@@ -147,24 +129,6 @@ cardboard: [
 { id: 'bear', name: '🧸', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🧸' },
 { id: 'diamond_pro', name: '💎 PRO', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '💎' }
 ],
-collector: [
-{ id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
-{ id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
-{ id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
-{ id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
-{ id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
-{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
-{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
-{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
-],
-diamond: [
-{ id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐️' },
-{ id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
-{ id: 'stars_25', name: '25 ⭐️', displayChance: '9%', realChance: 9, type: 'stars', value: 25, emoji: '⭐️' },
-{ id: 'stars_80', name: '80 ⭐️', displayChance: '4%', realChance: 4, type: 'stars', value: 80, emoji: '⭐️' },
-{ id: 'diamond_pro', name: 'Алмаз PRO 💎', displayChance: '0.6%', realChance: 0.6, type: 'collectible', emoji: '💎' },
-{ id: 'snoop_pro', name: 'Snoop Dog PRO 🐕', displayChance: '0.4%', realChance: 0.4, type: 'collectible', emoji: '🐕' }
-],
 coal: [
 { id: 'stars_2_5', name: '2.5 ⭐️', displayChance: '60%', realChance: 60, type: 'stars', value: 2.5, emoji: '⭐️' },
 { id: 'stars_5', name: '5 ⭐️', displayChance: '18%', realChance: 18, type: 'stars', value: 5, emoji: '⭐️' },
@@ -172,13 +136,6 @@ coal: [
 { id: 'stars_15', name: '15 ⭐️', displayChance: '6%', realChance: 6, type: 'stars', value: 15, emoji: '⭐️' },
 { id: 'material', name: 'Материал 🧱', displayChance: '5%', realChance: 5, type: 'item', sellPrice: 40, emoji: '🧱' },
 { id: 'brownie_pro', name: 'Happy Brownie PRO 💩', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '💩' }
-],
-elite: [
-{ id: 'stars_200', name: '200 ⭐️', displayChance: '75%', realChance: 75, type: 'stars', value: 200, emoji: '⭐️' },
-{ id: 'stars_275', name: '275 ⭐️', displayChance: '5%', realChance: 5, type: 'stars', value: 275, emoji: '⭐️' },
-{ id: 'champagne', name: '🍾', displayChance: '17%', realChance: 17, type: 'collectible', emoji: '🍾' },
-{ id: 'socks', name: 'Носки 🧦', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🧦' },
-{ id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '⚔️' }
 ],
 platinum: [
 { id: 'stars_35', name: '35 ⭐️', displayChance: '55%', realChance: 55, type: 'stars', value: 35, emoji: '⭐️' },
@@ -202,6 +159,21 @@ money: [
 { id: 'bday_happy', name: 'Happy B-day 💈', displayChance: '4%', realChance: 4, type: 'collectible', emoji: '💈' },
 { id: 'cigar', name: 'Snoop Cigar 🚬', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '🚬' }
 ],
+elite: [
+{ id: 'stars_200', name: '200 ⭐️', displayChance: '75%', realChance: 75, type: 'stars', value: 200, emoji: '⭐️' },
+{ id: 'stars_275', name: '275 ⭐️', displayChance: '5%', realChance: 5, type: 'stars', value: 275, emoji: '⭐️' },
+{ id: 'champagne', name: '🍾', displayChance: '17%', realChance: 17, type: 'collectible', emoji: '🍾' },
+{ id: 'socks', name: 'Носки 🧦', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🧦' },
+{ id: 'lightsword', name: 'Light Sword ⚔️', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '⚔️' }
+],
+diamond: [
+{ id: 'stars_8', name: '8 ⭐️', displayChance: '70%', realChance: 70, type: 'stars', value: 8, emoji: '⭐️' },
+{ id: 'bear', name: 'Мишка 🧸', displayChance: '15%', realChance: 15, type: 'item', sellPrice: 20, emoji: '🧸' },
+{ id: 'stars_25', name: '25 ⭐️', displayChance: '9%', realChance: 9, type: 'stars', value: 25, emoji: '⭐️' },
+{ id: 'stars_80', name: '80 ⭐️', displayChance: '4%', realChance: 4, type: 'stars', value: 80, emoji: '⭐️' },
+{ id: 'diamond_pro', name: 'Алмаз PRO 💎', displayChance: '0.6%', realChance: 0.6, type: 'collectible', emoji: '💎' },
+{ id: 'snoop_pro', name: 'Snoop Dog PRO 🐕', displayChance: '0.4%', realChance: 0.4, type: 'collectible', emoji: '🐕' }
+],
 winter: [
 { id: 'stars_20', name: '20 ⭐️', displayChance: '60%', realChance: 60, type: 'stars', value: 20, emoji: '⭐️' },
 { id: 'stars_35', name: '35 ⭐️', displayChance: '35%', realChance: 35, type: 'stars', value: 35, emoji: '⭐️' },
@@ -217,9 +189,18 @@ major: [
 { id: 'car', name: '🚗 Автомобиль', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🚗' },
 { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
 { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
+],
+collector: [
+{ id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
+{ id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
+{ id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
+{ id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
+{ id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
+{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🍜' },
+{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '🎩' },
+{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '🦅' }
 ]
 };
-
 const ICE_ARENA_PRIZES = [
 { id: 'bear', name: '🧸 Мишка', chance: 40, type: 'item', sellPrice: 20, emoji: '🧸' },
 { id: 'gloves', name: '🧤 Варежки', chance: 30, type: 'item', sellPrice: 50, emoji: '🧤' },
@@ -232,7 +213,6 @@ const ICE_ARENA_PRIZES = [
 { id: 'scarf', name: '🧣 Зимнее сокровище', chance: 0.5, type: 'collectible', emoji: '🧣' },
 { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
 ];
-
 const INITIAL_CASES = {
 cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: false, freeCount: 0 },
 coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
@@ -245,14 +225,12 @@ winter: { id: 'winter', name: 'Зимний', emoji: '☃️', price: 125, origi
 major: { id: 'major', name: 'Мажор', emoji: '🤴', price: 800, color: 'from-purple-500 to-indigo-700', locked: true, isNew: false, freeCount: 0 },
 collector: { id: 'collector', name: 'Коллекционер', emoji: '🎩', price: 650, color: 'from-rose-600 to-pink-800', locked: true, isNew: true, freeCount: 0 }
 };
-
 const TON_RATES = [
 { stars: 50, ton: 0.6 },
 { stars: 250, ton: 3 },
 { stars: 500, ton: 6 },
 { stars: 1000, ton: 12 }
 ];
-
 const STARS_PACKAGES = [
 { stars: 50, price: 50, name: '50 звезд' },
 { stars: 100, price: 100, name: '100 звезд' },
@@ -260,7 +238,6 @@ const STARS_PACKAGES = [
 { stars: 500, price: 500, name: '500 звезд' },
 { stars: 1000, price: 1000, name: '1000 звезд' }
 ];
-
 function App() {
 const [currentScreen, setCurrentScreen] = useState('cases');
 const [balance, setBalance] = useState(0);
@@ -316,18 +293,13 @@ const [withdrawAmount, setWithdrawAmount] = useState('');
 const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 const [totalDeposits, setTotalDeposits] = useState(0);
 const [lobbyTimer, setLobbyTimer] = useState(null);
+// Сохраняем цену кейса при открытии
 const [currentCasePrice, setCurrentCasePrice] = useState(0);
-
-// ✅ ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
 useEffect(() => {
 const initApp = async () => {
-try {
 let userId = null;
 let userData = null;
-
-// Инициализация Telegram WebApp
 if (TelegramWebApp) {
-try {
 TelegramWebApp.ready();
 TelegramWebApp.expand();
 const tgUser = TelegramWebApp.initDataUnsafe?.user;
@@ -340,18 +312,12 @@ avatar: tgUser.photo_url || null,
 id: userId
 };
 }
-} catch (tgError) {
-console.warn('Telegram WebApp error:', tgError);
 }
-}
-
-// Резервный вариант для гостевого доступа
 if (!userId) {
 const savedUser = localStorage.getItem('sbs_user_id');
 if (savedUser) {
 userId = savedUser;
-const savedData = localStorage.getItem('sbs_user_data');
-userData = savedData ? JSON.parse(savedData) : { name: 'Гость', avatar: null, username: null, id: userId };
+userData = JSON.parse(localStorage.getItem('sbs_user_data') || '{}');
 } else {
 userId = 'guest_' + Date.now();
 userData = { name: 'Гость', avatar: null, username: null, id: userId };
@@ -362,12 +328,26 @@ localStorage.setItem('sbs_user_data', JSON.stringify(userData));
 localStorage.setItem('sbs_user_id', userId);
 localStorage.setItem('sbs_user_data', JSON.stringify(userData));
 }
-
 setUser(userData);
-
-// Загрузка данных из Firebase
-if (db) {
 try {
+const lobbiesSnap = await db.ref('iceLobbies').once('value');
+if (lobbiesSnap.exists()) {
+const lobbies = lobbiesSnap.val();
+for (const lobbyId in lobbies) {
+await db.ref('iceLobbies/' + lobbyId).update({
+status: 'waiting',
+players: {},
+winner: null,
+prizes: [],
+ballPosition: { x: 50, y: 50, vx: 0, vy: 0 },
+timerEnd: null,
+lastWinnerId: null,
+allBetsPlaced: false,
+readyPlayers: {},
+countdownStarted: false
+});
+}
+}
 const snapshot = await db.ref('users/' + userId).once('value');
 const data = snapshot.val();
 if (data) {
@@ -405,63 +385,70 @@ lastActive: Date.now(),
 totalDeposits: 0
 });
 }
-} catch (fbError) {
-console.warn('Firebase load error:', fbError);
-}
-}
-
-setIsLoading(false);
 } catch (error) {
-console.error('Init error:', error);
-document.getElementById('error-display').style.display = 'block';
-document.getElementById('error-message').textContent = error.message;
-setIsLoading(false);
+console.error('Error loading ', error);
 }
+setIsLoading(false);
 };
-
 initApp();
 }, []);
-
-// ✅ ОНЛАЙН СТАТУС
 useEffect(() => {
-if (user?.id && db) {
+if (user?.id) {
 const onlineRef = db.ref('online/' + user.id);
-onlineRef.set({ name: user.name, timestamp: Date.now() }).catch(()=>{});
+onlineRef.set({ name: user.name, timestamp: Date.now() });
 onlineRef.onDisconnect().remove();
 db.ref('online').on('value', snap => {
 const baseOnline = Math.floor(Math.random() * 300) + 200;
 setOnlineCount(baseOnline + snap.numChildren());
 });
 return () => {
-onlineRef.remove().catch(()=>{});
+onlineRef.remove();
 };
 }
 }, [user?.id]);
-
-// ✅ АВТОСОХРАНЕНИЕ ДАННЫХ
 useEffect(() => {
-if (user?.id && !isLoading && db) {
+if (user?.id && !isLoading) {
 const saveData = async () => {
-try {
 const dataToSave = {
-balance, cases, inventory, tasks, inventorySlots,
-usedPromos, wonPromos, lastActive: Date.now(), totalDeposits
+balance,
+cases,
+inventory,
+tasks,
+inventorySlots,
+usedPromos,
+wonPromos,
+lastActive: Date.now(),
+totalDeposits
 };
 await db.ref('users/' + user.id).update(dataToSave);
 localStorage.setItem('sbs_game_backup', JSON.stringify(dataToSave));
-} catch (e) {
-console.warn('Save error:', e);
-}
 };
 saveData();
 const interval = setInterval(saveData, 5000);
 return () => clearInterval(interval);
 }
 }, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, isLoading, totalDeposits]);
-
-// ✅ ЛЕДЯНОЙ КАТОК - ОБНОВЛЕНИЕ ЛОББИ
 useEffect(() => {
-if (currentGame?.type === 'ice' && currentGame.lobbyId && db) {
+const handleBeforeUnload = async () => {
+if (user?.id) {
+await db.ref('users/' + user.id).update({
+balance,
+cases,
+inventory,
+tasks,
+inventorySlots,
+usedPromos,
+wonPromos,
+lastActive: Date.now(),
+totalDeposits
+});
+}
+};
+window.addEventListener('beforeunload', handleBeforeUnload);
+return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [balance, cases, inventory, tasks, inventorySlots, usedPromos, wonPromos, user?.id, totalDeposits]);
+useEffect(() => {
+if (currentGame?.type === 'ice' && currentGame.lobbyId) {
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
 lobbyRef.on('value', snap => {
 const data = snap.val();
@@ -477,7 +464,7 @@ setHasBet(false);
 setIsReady(false);
 }
 if (data.ballPosition) setBallPos(data.ballPosition);
-if (data.timerEnd && (data.status === 'betting' || data.status === 'countdown')) {
+if (data.timerEnd && data.status === 'betting') {
 const remaining = Math.max(0, Math.ceil((data.timerEnd - Date.now()) / 1000));
 setTimerRemaining(remaining);
 } else {
@@ -491,12 +478,10 @@ setShowPrizeChest(true);
 }
 }
 }
-// Таймер сброса лобби если 1 игрок
 if (data.players && Object.keys(data.players).length === 1 && !data.lobbyTimerStarted) {
 const timerEnd = Date.now() + 180000;
-lobbyRef.update({ lobbyTimerStarted: true, lobbyTimerEnd: timerEnd }).catch(()=>{});
+lobbyRef.update({ lobbyTimerStarted: true, lobbyTimerEnd: timerEnd });
 const timer = setTimeout(async () => {
-try {
 await lobbyRef.update({
 status: 'waiting',
 players: {},
@@ -512,21 +497,18 @@ countdownStarted: false,
 lobbyTimerStarted: false,
 lobbyTimerEnd: null
 });
-} catch (e) {}
 }, 180000);
 setLobbyTimer(timer);
 } else if (data.players && Object.keys(data.players).length > 1 && lobbyTimer) {
 clearTimeout(lobbyTimer);
 setLobbyTimer(null);
-lobbyRef.update({ lobbyTimerStarted: false, lobbyTimerEnd: null }).catch(()=>{});
+lobbyRef.update({ lobbyTimerStarted: false, lobbyTimerEnd: null });
 }
 }
 });
 return () => lobbyRef.off();
 }
 }, [currentGame, user?.id, showPrizeChest, lobbyTimer]);
-
-// ✅ ЭКРАН ЗАГРУЗКИ
 if (isLoading || !user) {
 return (
 <div className="min-h-screen flex items-center justify-center">
@@ -534,8 +516,6 @@ return (
 </div>
 );
 }
-
-// ✅ АДМИН ПАНЕЛЬ
 const handleTitleClick = () => {
 const newAttempts = adminAttempts + 1;
 setAdminAttempts(newAttempts);
@@ -544,7 +524,6 @@ setShowAdminLogin(true);
 setAdminAttempts(0);
 }
 };
-
 const checkAdminLogin = () => {
 if (adminLogin === 'REMOVED' && adminPassword === 'REMOVED') {
 setIsAdmin(true);
@@ -553,14 +532,12 @@ db.ref('users').once('value').then(snap => {
 const users = [];
 snap.forEach(child => users.push({ id: child.key, ...child.val() }));
 setAllUsers(users);
-}).catch(()=>{});
+});
 } else {
 alert('Неверный логин или пароль!');
 }
 };
-
 const adminGiveReward = async (targetUserId, reward) => {
-try {
 const snapshot = await db.ref('users/' + targetUserId).once('value');
 const userData = snapshot.val() || {};
 if (reward.type === 'stars') {
@@ -581,22 +558,28 @@ const newItem = { ...reward.item, uniqueId: Date.now() };
 const currentInventory = userData.inventory || [];
 await db.ref(`users/${targetUserId}/inventory`).set([...currentInventory, newItem]);
 if (targetUserId === user.id) setInventory(prev => [...prev, newItem]);
+} else if (reward.type === 'ice_gift') {
+const newItem = { id: 'ice_gift', name: '🧊 Лёд (подарок)', emoji: '🧊', type: 'ice_gift', sellPrice: 25, uniqueId: Date.now() };
+const currentInventory = userData.inventory || [];
+await db.ref(`users/${targetUserId}/inventory`).set([...currentInventory, newItem]);
+if (targetUserId === user.id) setInventory(prev => [...prev, newItem]);
+} else if (reward.type === 'promo_dellko') {
+const currentWonPromos = userData.wonPromos || [];
+await db.ref(`users/${targetUserId}/wonPromos`).set([...currentWonPromos, 'DELLKO']);
+if (targetUserId === user.id) setWonPromos(prev => [...prev, 'DELLKO']);
+} else if (reward.type === 'unlock_major') {
+const updatedCases = { ...userData.cases, major: { ...userData.cases?.major, locked: false } };
+await db.ref(`users/${targetUserId}/cases`).update({ major: { ...userData.cases?.major, locked: false } });
+if (targetUserId === user.id) setCases(updatedCases);
 } else if (reward.type === 'unlock_collector') {
 const updatedCases = { ...userData.cases, collector: { ...userData.cases?.collector, locked: false } };
 await db.ref(`users/${targetUserId}/cases`).update({ collector: { ...userData.cases?.collector, locked: false } });
 if (targetUserId === user.id) setCases(updatedCases);
 }
 alert('Награда выдана!');
-} catch (e) {
-alert('Ошибка: ' + e.message);
-}
 };
-
-// ✅ ЛЕДЯНОЙ КАТОК - ФУНКЦИИ
 const joinIceLobby = async (lobbyId) => {
-if (!db) return;
 const lobbyRef = db.ref('iceLobbies/' + lobbyId);
-try {
 const snap = await lobbyRef.once('value');
 if (snap.exists()) {
 const data = snap.val();
@@ -618,12 +601,9 @@ lobbyTimerEnd: null
 });
 }
 }
-} catch (e) {}
 setCurrentGame({ type: 'ice', lobbyId });
 };
-
 const placeBet = async () => {
-if (!db) return;
 if (balance < myBet) {
 alert('Недостаточно звезд!');
 return;
@@ -635,7 +615,6 @@ return;
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
 const newBalance = balance - myBet;
 setBalance(newBalance);
-try {
 await lobbyRef.child('players/' + user.id).set({
 name: user.name,
 avatar: user.avatar,
@@ -646,19 +625,12 @@ timestamp: Date.now()
 await lobbyRef.child('readyPlayers/' + user.id).remove();
 setIsReady(false);
 await db.ref('users/' + user.id + '/balance').set(newBalance);
-} catch (e) {
-setBalance(balance);
-alert('Ошибка ставки: ' + e.message);
-}
 };
-
-// ✅ ИСПРАВЛЕНО: Минимум 2 игрока для старта (было 3)
 const toggleReady = async () => {
-if (!hasBet || !db) return;
+if (!hasBet) return;
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
 const newReadyState = !isReady;
 setIsReady(newReadyState);
-try {
 if (newReadyState) {
 await lobbyRef.child('readyPlayers/' + user.id).set(true);
 } else {
@@ -668,19 +640,13 @@ const snap = await lobbyRef.once('value');
 const data = snap.val();
 const playersCount = Object.keys(data.players || {}).length;
 const readyPlayersCount = Object.keys(data.readyPlayers || {}).length;
-// ✅ ИЗМЕНЕНО: playersCount >= 2 (было >= 3)
-if (playersCount >= 2 && readyPlayersCount >= 2 && !data.countdownStarted) {
-const timerEnd = Date.now() + 10000;
-await lobbyRef.update({ status: 'countdown', timerEnd: timerEnd, countdownStarted: true });
-setTimeout(() => startIceGame(lobbyRef), 10000);
-}
-} catch (e) {
-console.error('Ready toggle error:', e);
+if (playersCount >= 2 && readyPlayersCount === playersCount && !data.countdownStarted) {
+const timerEnd = Date.now() + 5000;
+await lobbyRef.update({ status: 'betting', timerEnd: timerEnd, countdownStarted: true });
+setTimeout(() => startIceGame(lobbyRef), 5000);
 }
 };
-
 const startIceGame = async (lobbyRef) => {
-try {
 await lobbyRef.update({ status: 'playing' });
 let x = 50, y = 50, vx = (Math.random() - 0.5) * 20, vy = (Math.random() - 0.5) * 20;
 const interval = setInterval(async () => {
@@ -709,13 +675,8 @@ clearInterval(interval);
 await finishIceGame(lobbyRef, x, y);
 }
 }, 25);
-} catch (e) {
-console.error('Game start error:', e);
-}
 };
-
 const finishIceGame = async (lobbyRef, finalX, finalY) => {
-try {
 const snap = await lobbyRef.once('value');
 const data = snap.val();
 if (!data.players) return;
@@ -761,13 +722,8 @@ const newBalance = balance + winAmount;
 setBalance(newBalance);
 await db.ref('users/' + user.id + '/balance').set(newBalance);
 }
-} catch (e) {
-console.error('Finish game error:', e);
-}
 };
-
 const openChest = async () => {
-if (!db) return;
 if (openedChestCount < 1) {
 const prize = chestPrizes[0];
 setOpenedChestCount(1);
@@ -795,53 +751,44 @@ setShowNewGamePrompt(true);
 }, 1500);
 }
 };
-
-// ✅ ОТКРЫТИЕ КЕЙСОВ - ИСПРАВЛЕННАЯ ЛОГИКА
 const getCasePrice = (caseType) => {
 const c = cases[caseType];
-if (!c) return 0;
 if (c.freeCount > 0) return 0;
 if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
 return c.price;
 };
-
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТКРЫТИЯ КЕЙСА - БЕЗ ВОЗВРАТА СТОИМОСТИ
 const openCase = async (caseType) => {
-if (!db) return;
 const price = getCasePrice(caseType);
 const isFreeCase = cases[caseType]?.freeCount > 0;
-
-// Проверка баланса
+// Проверяем баланс только если кейс платный
 if (!isFreeCase && price > 0 && balance < price) {
 alert('Недостаточно звезд!');
 return;
 }
-
-// Сохраняем баланс ДО списания
+// Сохраняем текущий баланс ДО списания
 const balanceBefore = balance;
-
-// Вычисляем новый баланс после покупки (ТОЛЬКО списание)
+// Вычисляем новый баланс после покупки (ТОЛЬКО списание, без возврата)
 let newBalanceAfterPurchase = balanceBefore;
 if (!isFreeCase && price > 0) {
 newBalanceAfterPurchase = balanceBefore - price;
 }
-
-// Сразу списываем звезды за кейс
+// Сразу обновляем UI и Firebase - списываем звезды за кейс (если платный)
 if (!isFreeCase && price > 0) {
 setBalance(newBalanceAfterPurchase);
 await db.ref('users/' + user.id + '/balance').set(newBalanceAfterPurchase);
 }
-
 // Уменьшаем счетчик бесплатных кейсов
 if (isFreeCase) {
 const newFreeCount = cases[caseType].freeCount - 1;
 setCases(prev => ({ ...prev, [caseType]: { ...prev[caseType], freeCount: newFreeCount } }));
 await db.ref(`users/${user.id}/cases/${caseType}/freeCount`).set(newFreeCount);
 }
-
+// Сохраняем цену для информации
+setCurrentCasePrice(price);
 // Запускаем анимацию
 setIsSpinning(true);
 setSelectedCase({ ...cases[caseType], id: caseType });
-
 // Через 3 секунды показываем результат
 setTimeout(async () => {
 const items = CASE_REWARDS[caseType];
@@ -856,22 +803,20 @@ break;
 }
 setSpinResult(won);
 setIsSpinning(false);
-
 // Обрабатываем выигрыш
 if (won.type === 'stars') {
-// Добавляем награду к балансу (который уже без стоимости кейса)
+// Если выпали звезды - добавляем к текущему балансу (который уже без стоимости кейса)
+// ✅ ВАЖНО: стоимость кейса НЕ возвращается, только награда добавляется
 const finalBalance = newBalanceAfterPurchase + won.value;
 setBalance(finalBalance);
 await db.ref(`users/${user.id}/balance`).set(finalBalance);
 } else {
-// Добавляем предмет в инвентарь
+// Если выпал предмет - добавляем в инвентарь, баланс остается как после покупки
 await addToInventory(won);
 }
 }, 3000);
 };
-
 const addToInventory = async (item) => {
-if (!db) return;
 if (inventory.length < inventorySlots) {
 const newItem = { ...item, uniqueId: Date.now(), collected: Date.now() };
 const newInventory = [...inventory, newItem];
@@ -881,15 +826,24 @@ await db.ref(`users/${user.id}/inventory`).set(newInventory);
 alert('Инвентарь полон!');
 }
 };
-
 const sellItem = async (item) => {
-if (!db) return;
 if (item.type === 'ice_gift') {
 setSelectedIceGift(item);
 setShowIceGiftModal(true);
 return;
 }
 if (item.type === 'collectible') {
+if (item.name && item.name.includes('🧊') && item.part === 3) {
+if (confirm('Обменять 3 льда на 5 зимних кейсов и 1000⭐️?')) {
+const newBalance = balance + 1000;
+setBalance(newBalance);
+setCases(prev => ({ ...prev, winter: { ...prev.winter, freeCount: prev.winter.freeCount + 5 } }));
+const newInventory = inventory.filter(i => !(i.name && i.name.includes('🧊')));
+setInventory(newInventory);
+await db.ref(`users/${user.id}`).update({ balance: newBalance, inventory: newInventory, 'cases/winter/freeCount': cases.winter.freeCount + 5 });
+}
+return;
+}
 setSelectedCollectible(item);
 setShowCollectibleModal(true);
 return;
@@ -902,9 +856,8 @@ setInventory(newInventory);
 await db.ref(`users/${user.id}`).update({ balance: newBalance, inventory: newInventory });
 }
 };
-
 const sellIceGift = async () => {
-if (!selectedIceGift || !db) return;
+if (!selectedIceGift) return;
 const newBalance = balance + 25;
 const newInventory = inventory.filter(i => i.uniqueId !== selectedIceGift.uniqueId);
 setBalance(newBalance);
@@ -914,14 +867,11 @@ setShowIceGiftModal(false);
 setSelectedIceGift(null);
 alert('Продано за 25⭐️!');
 };
-
 const keepIceGift = () => {
 setShowIceGiftModal(false);
 setSelectedIceGift(null);
 };
-
 const unlockSlot = async () => {
-if (!db) return;
 if (balance >= 50) {
 if (confirm('Разблокировать слот за 50 ⭐️?')) {
 const newBalance = balance - 50;
@@ -934,10 +884,7 @@ await db.ref(`users/${user.id}`).update({ balance: newBalance, inventorySlots: n
 alert('Недостаточно звезд!');
 }
 };
-
-// ✅ ПРОМОКОДЫ
 const checkPromo = async () => {
-if (!db) return;
 const code = promoCode.toUpperCase();
 if (usedPromos.includes(code)) {
 setPromoError('Уже использован!');
@@ -969,12 +916,9 @@ setPromoError('Неверный промокод');
 return;
 }
 };
-
-// ✅ ПЛАТЕЖИ
 const generatePaymentId = () => {
 return 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 };
-
 const topUpBalance = async (stars, ton) => {
 const paymentId = generatePaymentId();
 const memo = `SBS_${user.id}_${stars}_${paymentId}`;
@@ -986,9 +930,7 @@ setPaymentStatus(`Отправьте ${ton} TON с комментарием: ${m
 setShowTopUp(false);
 setTimeout(() => checkPayment(paymentId), 10000);
 };
-
 const checkPayment = async (paymentId) => {
-if (!db) return;
 const payment = pendingPayments.find(p => p.id === paymentId);
 if (!payment || payment.status === 'completed') return;
 setCheckingPayment(true);
@@ -1038,7 +980,6 @@ setPaymentStatus('Ошибка проверки. Попробуйте позже
 setCheckingPayment(false);
 }
 };
-
 const buyStars = async (pkg) => {
 try {
 const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
@@ -1084,6 +1025,25 @@ alert('Оплата не завершена');
 } else {
 window.open(data.result, '_blank');
 alert('После оплаты нажмите ОК для проверки');
+const newBalance = balance + pkg.stars;
+const newTotalDeposits = totalDeposits + pkg.stars;
+setBalance(newBalance);
+setTotalDeposits(newTotalDeposits);
+await db.ref(`users/${user.id}`).update({ balance: newBalance, totalDeposits: newTotalDeposits });
+if (!tasks.deposit.completed && newTotalDeposits >= 100) {
+const newTasks = { ...tasks, deposit: { completed: true } };
+const newCases = { ...cases, gold: { ...cases.gold, freeCount: cases.gold.freeCount + 1 } };
+setTasks(newTasks);
+setCases(newCases);
+await db.ref(`users/${user.id}`).update({ tasks: newTasks, cases: newCases });
+}
+if (!tasks.depositMajor.completed && newTotalDeposits >= 350) {
+const newTasks = { ...tasks, depositMajor: { completed: true } };
+const newCases = { ...cases, collector: { ...cases.collector, locked: false, freeCount: cases.collector.freeCount + 1 } };
+setTasks(newTasks);
+setCases(newCases);
+await db.ref(`users/${user.id}`).update({ tasks: newTasks, cases: newCases });
+}
 }
 } else {
 alert('Ошибка создания платежа: ' + (data.description || 'Unknown error'));
@@ -1093,15 +1053,13 @@ console.error('Stars payment error:', error);
 alert('Ошибка платежа. Попробуйте позже.');
 }
 };
-
-// ✅ ЗАДАНИЯ
 const completeTask = async (taskId) => {
-if (!db) return;
 if (taskId === 'subscribe') {
 window.open('https://t.me/stepbystepdelision', '_blank');
 setTimeout(async () => {
 if (!tasks.subscribe?.completed) {
 const newTasks = { ...tasks, subscribe: { completed: true } };
+// ✅ ИСПРАВЛЕНО: Добавляем 1 бесплатный кейс Элита + 1 бесплатный прокрут
 const newCases = { 
 ...cases, 
 elite: { 
@@ -1124,7 +1082,6 @@ const link = 'https://t.me/share/url?url=' + encodeURIComponent(`https://t.me/st
 window.open(link, '_blank');
 }
 };
-
 const handleWithdraw = () => {
 if (totalDeposits < 350) {
 setShowWithdrawModal(false);
@@ -1134,14 +1091,11 @@ alert('Вывод подарков доступен только при попо
 alert('Выберите количество звезд, которое желаете вывести');
 }
 };
-
 const confirmWithdraw = (type) => {
 alert('Для получения награды обратитесь к администрации, предоставив скриншоты выбора! https://t.me/stepbystepdelision');
 setShowWithdrawModal(false);
 setWithdrawAmount('');
 };
-
-// ✅ РЕНДЕР ЛЕДЯНОЙ АРЕНЫ
 const renderIceArenaField = () => {
 if (!iceLobby?.players) return null;
 const players = Object.entries(iceLobby.players);
@@ -1172,8 +1126,6 @@ return (
 );
 });
 };
-
-// ✅ АДМИН ПАНЕЛЬ UI
 if (isAdmin) {
 return (
 <div className="min-h-screen bg-gray-900 p-4">
@@ -1236,6 +1188,10 @@ return (
 <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'diamond', count: 5 })} className="bg-blue-600 p-2 rounded">+5💎</button>
 <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'winter', count: 3 })} className="bg-cyan-600 p-2 rounded">+3☃️</button>
 <button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'elite', count: 2 })} className="bg-red-600 p-2 rounded">+2🎖</button>
+<button onClick={() => adminGiveReward(selectedUser.id, { type: 'case', caseType: 'money', count: 3 })} className="bg-green-500 p-2 rounded">+3💵</button>
+<button onClick={() => adminGiveReward(selectedUser.id, { type: 'ice_gift' })} className="bg-cyan-500 p-2 rounded">🧊 Лёд</button>
+<button onClick={() => adminGiveReward(selectedUser.id, { type: 'promo_dellko' })} className="bg-yellow-600 p-2 rounded">🎫 DELLKO</button>
+<button onClick={() => adminGiveReward(selectedUser.id, { type: 'unlock_major' })} className="bg-purple-600 p-2 rounded">🔓 Мажор</button>
 <button onClick={() => adminGiveReward(selectedUser.id, { type: 'unlock_collector' })} className="bg-pink-600 p-2 rounded">🔓 Коллекционер</button>
 <button onClick={() => setSelectedUser(null)} className="bg-gray-600 p-2 rounded col-span-4">Назад</button>
 </div>
@@ -1262,8 +1218,15 @@ return (
 <h3 className="text-lg mb-4">Выдать себе (админу):</h3>
 <div className="grid grid-cols-3 gap-2">
 <button onClick={() => adminGiveReward(user.id, { type: 'stars', amount: 10000 })} className="bg-indigo-600 p-3 rounded">+10000⭐️</button>
-<button onClick={() => adminGiveReward(user.id, { type: 'unlock_collector' })} className="bg-pink-600 p-3 rounded">🔓 Коллекционер</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'item', item: { name: 'Алмаз PRO 💎', emoji: '💎', type: 'collectible', uniqueId: Date.now() } })} className="bg-pink-600 p-3 rounded">💎 Алмаз PRO</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'ice_gift' })} className="bg-cyan-600 p-3 rounded">🧊 Лёд</button>
 <button onClick={() => adminGiveReward(user.id, { type: 'case', caseType: 'diamond', count: 10 })} className="bg-blue-600 p-3 rounded">+10 Алмаз</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'case', caseType: 'winter', count: 5 })} className="bg-cyan-500 p-3 rounded">+5 Зимних</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'promo_dellko' })} className="bg-yellow-600 p-3 rounded">🎫 DELLKO</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'item', item: { name: '🧤 Варежки', emoji: '🧤', type: 'item', sellPrice: 50, uniqueId: Date.now() } })} className="bg-purple-600 p-3 rounded">🧤 Варежки</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'item', item: { name: '🚗 Автомобиль', emoji: '🚗', type: 'collectible', uniqueId: Date.now() } })} className="bg-red-600 p-3 rounded">🚗 Авто</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'unlock_major' })} className="bg-purple-800 p-3 rounded">🔓 Разблок Мажор</button>
+<button onClick={() => adminGiveReward(user.id, { type: 'unlock_collector' })} className="bg-pink-800 p-3 rounded">🔓 Разблок Коллекционер</button>
 </div>
 </div>
 )}
@@ -1279,8 +1242,6 @@ return (
 </div>
 );
 }
-
-// ✅ ЛЕДЯНОЙ КАТОК UI
 if (currentGame?.type === 'ice') {
 return (
 <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -1291,15 +1252,15 @@ return (
 </div>
 <div className="text-center mb-4">
 <div className="text-sm text-cyan-300">Лобби #{currentGame.lobbyId}</div>
-<div className="text-lg font-bold text-white"> {gameStatus === 'waiting' ? '⏳ Ожидание игроков...' : gameStatus === 'countdown' ? '💰 Идёт ставка!' : gameStatus === 'playing' ? '🔴 Шарик летит!' : '🏆 Игра окончена'} </div>
-{gameStatus === 'countdown' && timerRemaining > 0 && (
+<div className="text-lg font-bold text-white"> {gameStatus === 'waiting' ? '⏳ Ожидание игроков...' : gameStatus === 'betting' ? '💰 Идёт ставка!' : gameStatus === 'playing' ? '🔴 Шарик летит!' : '🏆 Игра окончена'} </div>
+{gameStatus === 'betting' && timerRemaining > 0 && (
 <div className="text-3xl font-bold text-yellow-400 animate-pulse mt-2"> ⏰ {timerRemaining} сек </div>
 )}
 </div>
 <div className="flex justify-center mb-6">
 <div className="ice-circle relative">
 {renderIceArenaField()}
-{(gameStatus === 'waiting' || gameStatus === 'countdown') && (
+{(gameStatus === 'waiting' || gameStatus === 'betting') && (
 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-black rounded-full flex items-center justify-center text-4xl mystery-box border-4 border-cyan-400 shadow-lg shadow-cyan-500/50"> ❓ </div>
 )}
 {gameStatus === 'playing' && (
@@ -1310,10 +1271,10 @@ return (
 )}
 </div>
 </div>
-{(gameStatus === 'waiting' || gameStatus === 'countdown') && !hasBet ? (
+{(gameStatus === 'waiting' || gameStatus === 'betting') && !hasBet ? (
 <div className="glass rounded-xl p-4 mb-4 border border-cyan-500/30">
-{iceLobby?.players && Object.keys(iceLobby.players).length < 1 ? (
-<div className="text-center text-yellow-400 py-4"> ⏳ Ожидаем игроков... </div>
+{iceLobby?.players && Object.keys(iceLobby.players).length < 2 ? (
+<div className="text-center text-yellow-400 py-4"> ⏳ Ожидаем второго игрока... </div>
 ) : (
 <>
 <div className="flex gap-2 mb-4">
@@ -1330,7 +1291,7 @@ return (
 <div className="text-center mb-4">
 <div className="text-green-400 font-bold text-xl mb-2">✓ Ставка принята: {myBet}⭐️</div>
 <button onClick={toggleReady} className={`px-6 py-3 rounded-xl font-bold text-lg ${ isReady ? 'bg-green-600 hover:bg-green-500' : 'bg-yellow-600 hover:bg-yellow-500' } transition`} > {isReady ? '✅ Готов' : 'Приготовиться✅'} </button>
-<p className="text-sm text-gray-400 mt-2">Нужно минимум 2 игрока для старта</p>
+<p className="text-sm text-gray-400 mt-2">Ставку изменить нельзя после готовности</p>
 </div>
 ) : null}
 {showPrizeChest && iceLobby?.winner?.id === user.id && iceLobby?.prizeClaimed?.[user.id] !== true && (
@@ -1394,18 +1355,14 @@ return (
 </div>
 </div>
 </div>
-</div>
 );
 }
-
-// ✅ ОСНОВНОЙ ИНТЕРФЕЙС
 return (
 <div className="min-h-screen pb-24">
 <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
 <h1 onClick={handleTitleClick} className="text-xl font-bold cursor-pointer select-none hover:text-cyan-300 transition">Step By Step Game</h1>
 <button onClick={() => alert('Пополните баланс 🎯')} className="bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full font-bold text-gray-900 shadow-lg"> {balance.toFixed(2)} ⭐️ </button>
 </header>
-
 {paymentStatus && (
 <div className={`mx-4 mt-2 p-3 rounded-lg text-center text-sm ${paymentStatus.includes('✅') ? 'bg-green-500/20 border border-green-500' : 'bg-blue-500/20 border border-blue-500'}`}>
 {checkingPayment && <span className="animate-pulse">Проверка...</span>}
@@ -1415,7 +1372,6 @@ return (
 )}
 </div>
 )}
-
 {showIceGiftModal && (
 <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
 <div className="glass rounded-2xl p-6 max-w-sm w-full text-center border border-cyan-500/50">
@@ -1429,7 +1385,6 @@ return (
 </div>
 </div>
 )}
-
 {showCollectibleModal && (
 <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
 <div className="glass rounded-2xl p-6 max-w-sm w-full text-center">
@@ -1440,7 +1395,6 @@ return (
 </div>
 </div>
 )}
-
 {showAdminLogin && (
 <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
 <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -1452,7 +1406,6 @@ return (
 </div>
 </div>
 )}
-
 {showWithdrawModal && (
 <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
 <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -1466,7 +1419,6 @@ return (
 </div>
 </div>
 )}
-
 <main className="p-4 max-w-md mx-auto">
 {currentScreen === 'cases' && (
 <div>
@@ -1478,7 +1430,9 @@ return (
 <div className="bg-green-500/20 border border-green-500 rounded-lg p-3 mb-4 text-center animate-pulse"> 🎁 Бесплатных кейсов Элита: {cases.elite.freeCount} </div>
 )}
 <div className="grid grid-cols-2 gap-4">
-{Object.values(cases).filter(c => !c.locked).map(c => (
+{Object.values(cases)
+.filter(c => !c.locked)
+.map(c => (
 <div key={c.id} className={`glass rounded-xl p-4 relative hover:scale-105 transition ${c.id === 'cardboard' ? 'case-cardboard' : c.id === 'collector' ? 'case-collector' : ''}`}>
 {c.isNew && <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">Новое!</span>}
 {(c.id === 'diamond' || c.id === 'coal' || c.id === 'winter') && c.freeCount === 0 && c.discountPrice && (
@@ -1490,7 +1444,9 @@ return (
 <button onClick={() => setSelectedCase(c)} className="w-full mt-2 py-2 rounded-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition">Открыть</button>
 </div>
 ))}
-{Object.values(cases).filter(c => c.locked).map(c => (
+{Object.values(cases)
+.filter(c => c.locked)
+.map(c => (
 <div key={c.id} className="glass rounded-xl p-4 relative opacity-50">
 <div className="absolute inset-0 bg-black/70 rounded-xl flex items-center justify-center">
 <span className="text-2xl">🔒</span>
@@ -1504,14 +1460,13 @@ return (
 </div>
 </div>
 )}
-
 {currentScreen === 'games' && (
 <div>
 <h2 className="text-2xl font-bold mb-4 text-center">🎮 Игры</h2>
 <div className="space-y-4">
 <div className="glass rounded-xl p-6 cursor-pointer hover:bg-white/5 transition border border-cyan-500/30" onClick={() => setCurrentGame({ type: 'ice' })}>
 <h3 className="text-2xl font-bold mb-2 text-center text-cyan-300">☃️ Ледяной Каток</h3>
-<p className="text-gray-400 mb-4 text-center">Соревнуйтесь с другими игроками! Мин. 2 игрока</p>
+<p className="text-gray-400 mb-4 text-center">Соревнуйтесь с другими игроками! Мин. ставка 25⭐️</p>
 <div className="grid grid-cols-5 gap-2">
 {[1,2,3,4,5,6,7,8,9,10].map(i => (
 <button key={i} onClick={(e) => { e.stopPropagation(); joinIceLobby(i); }} className="bg-cyan-700 hover:bg-cyan-600 py-2 rounded-lg text-sm font-bold transition">#{i}</button>
@@ -1519,10 +1474,10 @@ return (
 </div>
 </div>
 <div className="glass rounded-xl p-6 opacity-50 text-center"><h3 className="text-xl font-bold mb-2">В разработке... 👲</h3></div>
+<div className="glass rounded-xl p-6 opacity-50 text-center"><h3 className="text-xl font-bold mb-2">В разработке... 👲</h3></div>
 </div>
 </div>
 )}
-
 {currentScreen === 'tasks' && (
 <div>
 <h2 className="text-2xl font-bold mb-4 text-center">📋 Мои Задания</h2>
@@ -1551,16 +1506,29 @@ return (
 <div className="flex justify-between items-start mb-2">
 <div>
 <h3 className="font-bold">Пополнить баланс на 350 ⭐️</h3>
-<p className="text-sm opacity-75">Награда: Кейс «Коллекционер» 🔓</p>
+<p className="text-sm opacity-75">Награда: Кейс «Коллекционер» + 1 прокрут</p>
 </div>
 {tasks.depositMajor?.completed && <span className="text-green-400 text-2xl">✅</span>}
 </div>
 <button onClick={() => completeTask('depositMajor')} className={`w-full py-2 rounded-lg ${tasks.depositMajor?.completed ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-500'} transition`}> {tasks.depositMajor?.completed ? 'Выполнено' : 'Пополнить'} </button>
 </div>
+<div className={`glass rounded-xl p-4 ${tasks.invite?.completed ? 'bg-green-500/20 border-green-500' : ''}`}>
+<div className="flex justify-between items-start mb-2">
+<div>
+<h3 className="font-bold">Пригласить трёх друзей</h3>
+<p className="text-sm opacity-75">Награда: 25 ⭐️</p>
+</div>
+{tasks.invite?.completed && <span className="text-green-400 text-2xl">✅</span>}
+</div>
+<div className="w-full bg-gray-700 rounded-full h-2 mb-3">
+<div className="bg-blue-500 h-2 rounded-full transition-all" style={{width: `${Math.min(((tasks.invite?.count || 0) / 3) * 100, 100)}%`}} />
+</div>
+<p className="text-sm text-gray-400 mb-2 text-center">{tasks.invite?.count || 0}/3 друзей</p>
+<button onClick={() => completeTask('invite')} disabled={tasks.invite?.completed} className={`w-full py-2 rounded-lg ${tasks.invite?.completed ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-500'} transition`}> {tasks.invite?.completed ? 'Выполнено' : 'Пригласить'} </button>
+</div>
 </div>
 </div>
 )}
-
 {currentScreen === 'profile' && (
 <div>
 <div className="glass rounded-xl p-4 mb-4 flex justify-between items-center">
@@ -1611,7 +1579,6 @@ return (
 </div>
 )}
 </main>
-
 {selectedCase && (
 <div className="fullscreen-modal flex items-center justify-center p-4">
 <div className="w-full max-w-lg">
@@ -1667,7 +1634,6 @@ return (
 </div>
 </div>
 )}
-
 {showTopUp && (
 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
 <div className="glass rounded-2xl p-6 max-w-sm w-full">
@@ -1696,7 +1662,6 @@ return (
 </div>
 </div>
 )}
-
 <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2">
 <div className="max-w-md mx-auto flex justify-around">
 {['tasks', 'cases', 'games', 'profile'].map(screen => (
@@ -1710,16 +1675,7 @@ return (
 </div>
 );
 }
-
-// ✅ БЕЗОПАСНЫЙ РЕНДЕРИНГ
-try {
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-} catch (error) {
-console.error('Render error:', error);
-document.getElementById('error-display').style.display = 'block';
-document.getElementById('error-message').textContent = error.message;
-}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
