@@ -139,6 +139,7 @@
     const TONCENTER_API = 'https://toncenter.com/api/v2';
     const BOT_TOKEN = 'REMOVED_BOT_TOKEN';
 
+    // ====== ИЗМЕНЕНО: Добавлен кейс Картон и исправлены шансы Коллекционера ======
     const CASE_REWARDS = {
       cardboard: [
         { id: 'stars_0_25', name: '0.25 ⭐️', displayChance: '80%', realChance: 80, type: 'stars', value: 0.25, emoji: '⭐️' },
@@ -209,6 +210,7 @@
         { id: 'diamond_ring', name: '💍 Бриллиантовое кольцо', displayChance: '3%', realChance: 3, type: 'collectible', emoji: '💍' },
         { id: 'gold_bar', name: '🥇 Золотой слиток', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🥇' }
       ],
+      // ====== ИЗМЕНЕНО: Разные отображаемые и реальные шансы ======
       collector: [
         { id: 'bear_pro', name: '🧸 PRO', displayChance: '55%', realChance: 55, type: 'collectible', emoji: '🧸' },
         { id: 'gift_pro', name: '🎁 PRO', displayChance: '20%', realChance: 20, type: 'collectible', emoji: '🎁' },
@@ -218,7 +220,7 @@
         { id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
         { id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
         { id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
-      ],
+      ]
     };
 
     const ICE_ARENA_PRIZES = [
@@ -234,13 +236,14 @@
       { id: 'dellko', name: '🔑 Promocode DELLKO', chance: 0.5, type: 'promo', code: 'DELLKO', emoji: '🔑' }
     ];
 
+    // ====== ИЗМЕНЕНО: Добавлен кейс Картон, Коллекционер заблокирован ======
     const INITIAL_CASES = {
       cardboard: { id: 'cardboard', name: 'Картон', emoji: '📦', price: 3, color: 'from-amber-800 to-amber-900', locked: false, isNew: true, freeCount: 0 },
       coal: { id: 'coal', name: 'Уголёк', emoji: '🪨', price: 22, originalPrice: 22, discountPrice: 20, color: 'from-gray-600 to-gray-800', locked: false, isNew: false, freeCount: 0 },
       platinum: { id: 'platinum', name: 'Платина', emoji: '💎', price: 100, color: 'from-gray-300 to-gray-500', locked: false },
       gold: { id: 'gold', name: 'Золотой', emoji: '👑', price: 250, color: 'from-yellow-400 to-yellow-600', locked: false },
       money: { id: 'money', name: 'Денежный', emoji: '💵', price: 350, color: 'from-green-400 to-green-600', locked: false },
-      elite: { id: 'elite', name: 'Элита', emoji: '🎖', price: 500, color: 'from-red-400 to-red-600', locked: false, isNew: false, freeCount: 0 },
+      elite: { id: 'elite', name: 'Элита', emoji: '🎖', price: 500, color: 'from-red-400 to-red-600', locked: false, isNew: false, freeCount: 0, freeSpins: 0 },
       diamond: { id: 'diamond', name: 'Алмаз', emoji: '💎', price: 50, originalPrice: 50, discountPrice: 35, color: 'from-blue-400 to-blue-600', locked: false, isNew: false, freeCount: 0 },
       winter: { id: 'winter', name: 'Зимний', emoji: '☃️', price: 125, originalPrice: 150, discountPrice: 125, color: 'from-cyan-400 to-blue-500', locked: false, isNew: true, freeCount: 0 },
       major: { id: 'major', name: 'Мажор', emoji: '🤴', price: 800, color: 'from-purple-500 to-indigo-700', locked: true, isNew: false, freeCount: 0 },
@@ -316,7 +319,6 @@
       const [showWithdrawModal, setShowWithdrawModal] = useState(false);
       const [totalDeposits, setTotalDeposits] = useState(0);
 
-      // -------- ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ / ДАННЫХ --------
       useEffect(() => {
         const initApp = async () => {
           let userId = null;
@@ -412,7 +414,6 @@
         initApp();
       }, []);
 
-      // -------- ОНЛАЙН --------
       useEffect(() => {
         if (!user?.id) return;
 
@@ -431,7 +432,6 @@
         };
       }, [user?.id]);
 
-      // -------- ПЕРИОДИЧЕСКОЕ СОХРАНЕНИЕ --------
       useEffect(() => {
         if (!user?.id || isLoading) return;
 
@@ -468,7 +468,6 @@
         totalDeposits
       ]);
 
-      // -------- СОХРАНЕНИЕ ПРИ ЗАКРЫТИИ ТАБА --------
       useEffect(() => {
         const handleBeforeUnload = async () => {
           if (!user?.id) return;
@@ -500,7 +499,6 @@
         totalDeposits
       ]);
 
-      // -------- ЛЕДЯНОЙ КАТОК: ЛОББИ --------
       useEffect(() => {
         if (!(currentGame?.type === 'ice' && currentGame.lobbyId && user?.id)) {
           return;
@@ -542,7 +540,7 @@
             setShowPrizeChest(true);
           }
 
-          // reset if no players
+          // Сброс только если 0 игроков
           if (data.players && Object.keys(data.players).length === 0 && data.status !== 'waiting') {
             lobbyRef.update({
               status: 'waiting',
@@ -571,7 +569,6 @@
         );
       }
 
-      // -------- АДМИН --------
       const handleTitleClick = () => {
         const newAttempts = adminAttempts + 1;
         setAdminAttempts(newAttempts);
@@ -607,9 +604,7 @@
           if (targetUserId === user.id) setBalance(newBalance);
         } else if (reward.type === 'case') {
           const current = userData.cases?.[reward.caseType]?.freeCount || 0;
-          await db
-            .ref(`users/${targetUserId}/cases/${reward.caseType}/freeCount`)
-            .set(current + reward.count);
+          await db.ref(`users/${targetUserId}/cases/${reward.caseType}/freeCount`).set(current + reward.count);
           if (targetUserId === user.id) {
             setCases(prev => ({
               ...prev,
@@ -622,10 +617,7 @@
         } else if (reward.type === 'item') {
           const newItem = { ...reward.item, uniqueId: Date.now() };
           const currentInventory = userData.inventory || [];
-          await db.ref(`users/${targetUserId}/inventory`).set([
-            ...currentInventory,
-            newItem
-          ]);
+          await db.ref(`users/${targetUserId}/inventory`).set([...currentInventory, newItem]);
           if (targetUserId === user.id) setInventory(prev => [...prev, newItem]);
         } else if (reward.type === 'ice_gift') {
           const newItem = {
@@ -637,18 +629,12 @@
             uniqueId: Date.now()
           };
           const currentInventory = userData.inventory || [];
-          await db.ref(`users/${targetUserId}/inventory`).set([
-            ...currentInventory,
-            newItem
-          ]);
+          await db.ref(`users/${targetUserId}/inventory`).set([...currentInventory, newItem]);
           if (targetUserId === user.id) setInventory(prev => [...prev, newItem]);
         } else if (reward.type === 'promo_dellko') {
           const currentWonPromos = userData.wonPromos || [];
-          await db
-            .ref(`users/${targetUserId}/wonPromos`)
-            .set([...currentWonPromos, 'DELLKO']);
-          if (targetUserId === user.id)
-            setWonPromos(prev => [...prev, 'DELLKO']);
+          await db.ref(`users/${targetUserId}/wonPromos`).set([...currentWonPromos, 'DELLKO']);
+          if (targetUserId === user.id) setWonPromos(prev => [...prev, 'DELLKO']);
         } else if (reward.type === 'unlock_major') {
           const updatedCases = {
             ...userData.cases,
@@ -671,7 +657,7 @@
         alert('Награда выдана!');
       };
 
-      // -------- ЛЕДЯНОЙ КАТОК: ЛОББИ --------
+      // ====== ИЗМЕНЕНО: Минимум 3 игрока, сброс таймера при новом игроке, лимит 15 игроков ======
       const joinIceLobby = async (lobbyId) => {
         const lobbyRef = db.ref('iceLobbies/' + lobbyId);
         const snap = await lobbyRef.once('value');
@@ -692,6 +678,7 @@
               countdownStarted: false
             });
           }
+          // Сброс таймера если новый игрок заходит во время отсчета
           if (data.status === 'betting') {
             await lobbyRef.update({
               status: 'waiting',
@@ -719,10 +706,13 @@
         const snap = await lobbyRef.once('value');
         const data = snap.val() || {};
 
+        // Проверка лимита 15 игроков
         if (data.players && Object.keys(data.players).length >= 15) {
           alert('Лобби заполнено (15/15)!');
           return;
         }
+
+        // Сброс если действие во время отсчета
         if (data.status === 'betting') {
           await lobbyRef.update({
             status: 'waiting',
@@ -832,11 +822,8 @@
           const userSnap = await db.ref('users/' + winner.id).once('value');
           const userData = userSnap.val() || {};
           const userWonPromos = userData.wonPromos || [];
-          await db
-            .ref('users/' + winner.id + '/wonPromos')
-            .set([...userWonPromos, 'DELLKO']);
-          if (winner.id === user.id)
-            setWonPromos(prev => [...prev, 'DELLKO']);
+          await db.ref('users/' + winner.id + '/wonPromos').set([...userWonPromos, 'DELLKO']);
+          if (winner.id === user.id) setWonPromos(prev => [...prev, 'DELLKO']);
         }
 
         await lobbyRef.update({
@@ -871,8 +858,9 @@
         const playersCount = Object.keys(data.players || {}).length;
         const readyPlayersCount = Object.keys(data.readyPlayers || {}).length;
 
+        // ====== ИЗМЕНЕНО: Минимум 3 игрока для старта ======
         if (
-          playersCount >= 2 &&
+          playersCount >= 3 &&
           readyPlayersCount === playersCount &&
           !data.countdownStarted
         ) {
@@ -928,8 +916,92 @@
         const c = cases[caseType];
         if (!c) return 0;
         if (c.freeCount > 0) return 0;
+        if (c.freeSpins > 0) return 0; // Бесплатный прокрут
         if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
         return c.price;
+      };
+
+      // ====== ИЗМЕНЕНО: Исправлен баг возврата стоимости кейса ======
+      const openCase = async (caseType) => {
+        const price = getCasePrice(caseType);
+        const isFreeCase = cases[caseType]?.freeCount > 0;
+        const isFreeSpin = cases[caseType]?.freeSpins > 0;
+
+        // Проверяем баланс только если кейс платный
+        if (!isFreeCase && !isFreeSpin && price > 0 && balance < price) {
+          alert('Недостаточно звезд!');
+          return;
+        }
+
+        // Сохраняем текущий баланс ДО списания
+        const balanceBefore = balance;
+        
+        // Вычисляем новый баланс после покупки (ТОЛЬКО списание, без возврата)
+        let newBalanceAfterPurchase = balanceBefore;
+        if (!isFreeCase && !isFreeSpin && price > 0) {
+          newBalanceAfterPurchase = balanceBefore - price;
+          // Сразу обновляем UI и Firebase - списываем звезды за кейс
+          setBalance(newBalanceAfterPurchase);
+          await db.ref('users/' + user.id + '/balance').set(newBalanceAfterPurchase);
+        }
+
+        // Уменьшаем счетчик бесплатных кейсов или прокрутов
+        if (isFreeCase) {
+          const newFreeCount = (cases[caseType].freeCount || 0) - 1;
+          setCases(prev => ({
+            ...prev,
+            [caseType]: {
+              ...prev[caseType],
+              freeCount: newFreeCount
+            }
+          }));
+          await db.ref(`users/${user.id}/cases/${caseType}/freeCount`).set(newFreeCount);
+        } else if (isFreeSpin) {
+          const newFreeSpins = (cases[caseType].freeSpins || 0) - 1;
+          setCases(prev => ({
+            ...prev,
+            [caseType]: {
+              ...prev[caseType],
+              freeSpins: newFreeSpins
+            }
+          }));
+          await db.ref(`users/${user.id}/cases/${caseType}/freeSpins`).set(newFreeSpins);
+        }
+
+        // Запускаем анимацию
+        setIsSpinning(true);
+        setSelectedCase({ ...cases[caseType], id: caseType });
+
+        // Через 3 секунды показываем результат
+        setTimeout(async () => {
+          const items = CASE_REWARDS[caseType];
+          const rand = Math.random() * 100;
+          let cum = 0, won = items[0];
+          
+          // Используем realChance для определения выигрыша
+          for (const item of items) {
+            cum += item.realChance;
+            if (rand <= cum) {
+              won = item;
+              break;
+            }
+          }
+          
+          setSpinResult(won);
+          setIsSpinning(false);
+
+          // Обрабатываем выигрыш
+          if (won.type === 'stars') {
+            // Если выпали звезды - добавляем к текущему балансу (который уже без стоимости кейса)
+            // ВАЖНО: стоимость кейса НЕ возвращается, только награда добавляется
+            const finalBalance = newBalanceAfterPurchase + won.value;
+            setBalance(finalBalance);
+            await db.ref(`users/${user.id}/balance`).set(finalBalance);
+          } else {
+            // Если выпал предмет - добавляем в инвентарь, баланс остается как после покупки
+            await addToInventory(won);
+          }
+        }, 3000);
       };
 
       const addToInventory = async (item) => {
@@ -945,70 +1017,6 @@
         const newInventory = [...inventory, newItem];
         setInventory(newInventory);
         await db.ref(`users/${user.id}/inventory`).set(newInventory);
-      };
-
-      const openCase = async (caseType) => {
-        const price = getCasePrice(caseType);
-        const isFreeCase = cases[caseType]?.freeCount > 0;
-
-        if (!isFreeCase && price > 0 && balance < price) {
-          alert('Недостаточно звезд!');
-          return;
-        }
-
-        const balanceBefore = balance;
-        let newBalanceAfterPurchase = balanceBefore;
-
-        if (!isFreeCase && price > 0) {
-          newBalanceAfterPurchase = balanceBefore - price;
-          setBalance(newBalanceAfterPurchase);
-          await db
-            .ref('users/' + user.id + '/balance')
-            .set(newBalanceAfterPurchase);
-        }
-
-        if (isFreeCase) {
-          const newFreeCount = (cases[caseType].freeCount || 0) - 1;
-          setCases(prev => ({
-            ...prev,
-            [caseType]: {
-              ...prev[caseType],
-              freeCount: newFreeCount
-            }
-          }));
-          await db
-            .ref(`users/${user.id}/cases/${caseType}/freeCount`)
-            .set(newFreeCount);
-        }
-
-        setIsSpinning(true);
-        setSelectedCase({ ...cases[caseType], id: caseType });
-
-        setTimeout(async () => {
-          const items = CASE_REWARDS[caseType];
-          const rand = Math.random() * 100;
-          let cum = 0,
-            won = items[0];
-          for (const item of items) {
-            cum += item.realChance;
-            if (rand <= cum) {
-              won = item;
-              break;
-            }
-          }
-          setSpinResult(won);
-          setIsSpinning(false);
-
-          if (won.type === 'stars') {
-            const finalBalance = newBalanceAfterPurchase + won.value;
-            setBalance(finalBalance);
-            await db
-              .ref(`users/${user.id}/balance`)
-              .set(finalBalance);
-          } else {
-            await addToInventory(won);
-          }
-        }, 3000);
       };
 
       const sellItem = async (item) => {
@@ -1038,7 +1046,7 @@
               await db.ref(`users/${user.id}`).update({
                 balance: newBalance,
                 inventory: newInventory,
-                'cases/winter/freeCount': (cases.winter.freeCount || 0) + 5
+                'cases/winter/freeCount': cases.winter.freeCount + 5
               });
             }
             return;
@@ -1141,9 +1149,7 @@
           setPromoCode('');
           const newPromos = [...usedPromos, code];
           setUsedPromos(newPromos);
-          await db
-            .ref(`users/${user.id}/usedPromos`)
-            .set(newPromos);
+          await db.ref(`users/${user.id}/usedPromos`).set(newPromos);
         } else if (code === 'DIAMOND') {
           const newCases = {
             ...cases,
@@ -1157,9 +1163,7 @@
           setPromoCode('');
           const newPromos = [...usedPromos, code];
           setUsedPromos(newPromos);
-          await db
-            .ref(`users/${user.id}/usedPromos`)
-            .set(newPromos);
+          await db.ref(`users/${user.id}/usedPromos`).set(newPromos);
         } else {
           setPromoError('Неверный промокод');
         }
@@ -1271,6 +1275,7 @@
                 });
               }
 
+              // ====== ИЗМЕНЕНО: Разблокировка Коллекционера при депозите 350 ======
               if (
                 !tasks.depositMajor.completed &&
                 newTotalDeposits >= 350
@@ -1284,8 +1289,7 @@
                   collector: {
                     ...cases.collector,
                     locked: false,
-                    freeCount:
-                      (cases.collector.freeCount || 0) + 1
+                    freeCount: (cases.collector.freeCount || 0) + 1
                   }
                 };
                 setTasks(newTasks);
@@ -1372,6 +1376,7 @@
                       });
                     }
 
+                    // ====== ИЗМЕНЕНО: Разблокировка Коллекционера при покупке звезд ======
                     if (
                       !tasks.depositMajor.completed &&
                       newTotalDeposits >= 350
@@ -1423,6 +1428,7 @@
         }
       };
 
+      // ====== ИЗМЕНЕНО: Добавлен бесплатный прокрут за подписку ======
       const completeTask = async (taskId) => {
         if (taskId === 'subscribe') {
           window.open('https://t.me/stepbystepdelision', '_blank');
@@ -1436,7 +1442,8 @@
                 ...cases,
                 elite: {
                   ...cases.elite,
-                  freeCount: (cases.elite?.freeCount || 0) + 1
+                  freeCount: (cases.elite?.freeCount || 0) + 1,
+                  freeSpins: (cases.elite?.freeSpins || 0) + 1
                 }
               };
               setTasks(newTasks);
@@ -1446,7 +1453,7 @@
                 cases: newCases
               });
               alert(
-                '🎉 Получен 1 бесплатный кейс Элита + 1 прокрут!'
+                '🎉 Получен 1 бесплатный кейс Элита + 1 бесплатный прокрут!'
               );
             }
           }, 2000);
@@ -1569,7 +1576,6 @@
         });
       };
 
-      // -------- ADMIN UI --------
       if (isAdmin) {
         return (
           <div className="min-h-screen bg-gray-900 p-4">
@@ -2000,7 +2006,6 @@
         );
       }
 
-      // -------- ICE GAME UI --------
       if (currentGame?.type === 'ice') {
         return (
           <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 p-4">
@@ -2076,9 +2081,9 @@
               !hasBet ? (
                 <div className="glass rounded-xl p-4 mb-4 border border-cyan-500/30">
                   {iceLobby?.players &&
-                  Object.keys(iceLobby.players).length < 2 ? (
+                  Object.keys(iceLobby.players).length < 3 ? (
                     <div className="text-center text-yellow-400 py-4">
-                      ⏳ Ожидаем второго игрока...
+                      ⏳ Ожидаем минимум 3 игроков (сейчас {Object.keys(iceLobby.players).length})...
                     </div>
                   ) : (
                     <>
@@ -2313,7 +2318,6 @@
         );
       }
 
-      // -------- MAIN UI --------
       return (
         <div className="min-h-screen pb-24">
           <header className="p-4 flex justify-between items-center glass sticky top-0 z-50">
@@ -2513,6 +2517,12 @@
                     {cases.elite.freeCount}
                   </div>
                 )}
+                {cases.elite?.freeSpins > 0 && (
+                  <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-3 mb-4 text-center animate-pulse">
+                    🎁 Бесплатных прокрутов Элита:{' '}
+                    {cases.elite.freeSpins}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   {Object.values(cases)
@@ -2560,6 +2570,10 @@
                           {c.freeCount > 0 ? (
                             <span className="text-green-400 font-bold">
                               Бесплатно!
+                            </span>
+                          ) : c.freeSpins > 0 ? (
+                            <span className="text-blue-400 font-bold">
+                              Прокрут!
                             </span>
                           ) : c.discountPrice &&
                             c.discountPrice !== c.price ? (
@@ -2752,7 +2766,7 @@
                           Пополнить баланс на 350 ⭐️
                         </h3>
                         <p className="text-sm opacity-75">
-                          Награда: Кейс «Коллекционер» + 1 прокрут
+                          Награда: Кейс «Коллекционер» разблокирован + 1 прокрут
                         </p>
                       </div>
                       {tasks.depositMajor?.completed && (
