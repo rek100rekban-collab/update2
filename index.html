@@ -196,9 +196,9 @@ collector: [
 { id: 'rocket_pro', name: '🚀 PRO', displayChance: '15%', realChance: 15, type: 'collectible', emoji: '🚀' },
 { id: 'cup_pro', name: '🏆 PRO', displayChance: '5%', realChance: 5, type: 'collectible', emoji: '🏆' },
 { id: 'cake_candle', name: '🍰B-day Candle', displayChance: '2%', realChance: 2, type: 'collectible', emoji: '🍰' },
-{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 1.5, type: 'collectible', emoji: '🍜' },
-{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 1, type: 'collectible', emoji: '🎩' },
-{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0.5, type: 'collectible', emoji: '🦅' }
+{ id: 'ramen_pro', name: '🍜Ramen PRO', displayChance: '1.5%', realChance: 0.5, type: 'collectible', emoji: '🍜' },
+{ id: 'hat_pro', name: '🎩 Top hat', displayChance: '1%', realChance: 0, type: 'collectible', emoji: '🎩' },
+{ id: 'bird_pro', name: '🦅Rare bird', displayChance: '0.5%', realChance: 0, type: 'collectible', emoji: '🦅' }
 ]
 };
 const ICE_ARENA_PRIZES = [
@@ -478,11 +478,9 @@ setShowPrizeChest(true);
 }
 }
 }
-if (data.players && Object.keys(data.players).length === 1 && !data.lobbyTimerStarted) {
-const timerEnd = Date.now() + 180000;
-lobbyRef.update({ lobbyTimerStarted: true, lobbyTimerEnd: timerEnd });
-const timer = setTimeout(async () => {
-await lobbyRef.update({
+// ✅ ИСПРАВЛЕНИЕ ЛОББИ: Сброс только если 0 игроков
+if (data.players && Object.keys(data.players).length === 0 && data.status !== 'waiting') {
+lobbyRef.update({
 status: 'waiting',
 players: {},
 winner: null,
@@ -497,13 +495,8 @@ countdownStarted: false,
 lobbyTimerStarted: false,
 lobbyTimerEnd: null
 });
-}, 180000);
-setLobbyTimer(timer);
-} else if (data.players && Object.keys(data.players).length > 1 && lobbyTimer) {
-clearTimeout(lobbyTimer);
-setLobbyTimer(null);
-lobbyRef.update({ lobbyTimerStarted: false, lobbyTimerEnd: null });
 }
+// Удален таймер сброса для 1 игрока (согласно требованиям)
 }
 });
 return () => lobbyRef.off();
@@ -583,7 +576,7 @@ const lobbyRef = db.ref('iceLobbies/' + lobbyId);
 const snap = await lobbyRef.once('value');
 if (snap.exists()) {
 const data = snap.val();
-if (data.status === 'finished' || data.status === 'playing') {
+if (data.status === 'finished') {
 await lobbyRef.update({
 status: 'waiting',
 players: {},
@@ -599,6 +592,9 @@ countdownStarted: false,
 lobbyTimerStarted: false,
 lobbyTimerEnd: null
 });
+} else if (data.status === 'playing') {
+alert('Игра началась! Вы можете только наблюдать.');
+// Не сбрасываем, позволяем зайти для наблюдения
 }
 }
 setCurrentGame({ type: 'ice', lobbyId });
@@ -613,6 +609,29 @@ alert('Минимум 25⭐️!');
 return;
 }
 const lobbyRef = db.ref('iceLobbies/' + currentGame.lobbyId);
+const snap = await lobbyRef.once('value');
+const data = snap.val();
+
+// ✅ ИСПРАВЛЕНИЕ ЛОББИ: Если идет отсчет (betting), сбрасываем лобби при новой ставке
+if (data.status === 'betting') {
+await lobbyRef.update({
+status: 'waiting',
+players: {},
+readyPlayers: {},
+timerEnd: null,
+countdownStarted: false,
+lobbyTimerStarted: false,
+lobbyTimerEnd: null
+});
+alert('Новый игрок присоединился! Ставки сброшены.');
+}
+
+// ✅ ИСПРАВЛЕНИЕ ЛОББИ: Проверка макс игроков (15)
+if (data.players && Object.keys(data.players).length >= 15) {
+alert('Лобби заполнено (15/15)!');
+return;
+}
+
 const newBalance = balance - myBet;
 setBalance(newBalance);
 await lobbyRef.child('players/' + user.id).set({
@@ -640,10 +659,12 @@ const snap = await lobbyRef.once('value');
 const data = snap.val();
 const playersCount = Object.keys(data.players || {}).length;
 const readyPlayersCount = Object.keys(data.readyPlayers || {}).length;
+// ✅ ИСПРАВЛЕНИЕ ЛОББИ: Минимум 2 игрока для старта
 if (playersCount >= 2 && readyPlayersCount === playersCount && !data.countdownStarted) {
-const timerEnd = Date.now() + 5000;
+// ✅ ИСПРАВЛЕНИЕ ЛОББИ: Таймер 10 секунд (10000 мс)
+const timerEnd = Date.now() + 10000;
 await lobbyRef.update({ status: 'betting', timerEnd: timerEnd, countdownStarted: true });
-setTimeout(() => startIceGame(lobbyRef), 5000);
+setTimeout(() => startIceGame(lobbyRef), 10000);
 }
 };
 const startIceGame = async (lobbyRef) => {
@@ -757,7 +778,7 @@ if (c.freeCount > 0) return 0;
 if (c.discountPrice && c.discountPrice !== c.price) return c.discountPrice;
 return c.price;
 };
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТКРЫТИЯ КЕЙСА - БЕЗ ВОЗВРАТА СТОИМОСТИ
+// ✅ ИСПРАВЛЕНИЕ БАГА СО ЗВЕЗДАМИ: Стоимость кейса не возвращается
 const openCase = async (caseType) => {
 const price = getCasePrice(caseType);
 const isFreeCase = cases[caseType]?.freeCount > 0;
@@ -794,6 +815,7 @@ setTimeout(async () => {
 const items = CASE_REWARDS[caseType];
 const rand = Math.random() * 100;
 let cum = 0, won = items[0];
+// ✅ ИСПОЛЬЗУЕМ realChance для логики выпадения
 for (const item of items) {
 cum += item.realChance;
 if (rand <= cum) {
@@ -964,6 +986,7 @@ await db.ref(`users/${user.id}`).update({ tasks: newTasks, cases: newCases });
 }
 if (!tasks.depositMajor.completed && newTotalDeposits >= 350) {
 const newTasks = { ...tasks, depositMajor: { completed: true } };
+// ✅ РАЗБЛОКИРОВКА КЕЙСА КОЛЛЕКЦИОНЕР
 const newCases = { ...cases, collector: { ...cases.collector, locked: false, freeCount: cases.collector.freeCount + 1 } };
 setTasks(newTasks);
 setCases(newCases);
@@ -1012,6 +1035,7 @@ await db.ref(`users/${user.id}`).update({ tasks: newTasks, cases: newCases });
 }
 if (!tasks.depositMajor.completed && newTotalDeposits >= 350) {
 const newTasks = { ...tasks, depositMajor: { completed: true } };
+// ✅ РАЗБЛОКИРОВКА КЕЙСА КОЛЛЕКЦИОНЕР
 const newCases = { ...cases, collector: { ...cases.collector, locked: false, freeCount: cases.collector.freeCount + 1 } };
 setTasks(newTasks);
 setCases(newCases);
@@ -1039,6 +1063,7 @@ await db.ref(`users/${user.id}`).update({ tasks: newTasks, cases: newCases });
 }
 if (!tasks.depositMajor.completed && newTotalDeposits >= 350) {
 const newTasks = { ...tasks, depositMajor: { completed: true } };
+// ✅ РАЗБЛОКИРОВКА КЕЙСА КОЛЛЕКЦИОНЕР
 const newCases = { ...cases, collector: { ...cases.collector, locked: false, freeCount: cases.collector.freeCount + 1 } };
 setTasks(newTasks);
 setCases(newCases);
@@ -1060,12 +1085,12 @@ setTimeout(async () => {
 if (!tasks.subscribe?.completed) {
 const newTasks = { ...tasks, subscribe: { completed: true } };
 // ✅ ИСПРАВЛЕНО: Добавляем 1 бесплатный кейс Элита + 1 бесплатный прокрут
-const newCases = { 
-...cases, 
-elite: { 
-...cases.elite, 
-freeCount: (cases.elite?.freeCount || 0) + 1 
-} 
+const newCases = {
+...cases,
+elite: {
+...cases.elite,
+freeCount: (cases.elite?.freeCount || 0) + 1
+}
 };
 setTasks(newTasks);
 setCases(newCases);
